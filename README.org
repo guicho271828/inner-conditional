@@ -1,6 +1,6 @@
 * Inner-Conditional
 
- - Series of macros which optimizes the inner conditional jumps
+ - Series of macros which optimize the inner conditional jumps
    of looping, iterating, anything
  - Extensible syntaxes and helper macros
  - A kind of idea as `compile-time continuation'
@@ -87,7 +87,7 @@ Also, it depends on the following libraries:
 ** Installation
 
 + First grab the code with =git clone git@github.com:guicho271828/inner-conditional.git=
-+ Put it in local-project folder
++ Put it in your local-project folder
 + open slime REPL
 + =(ql:quickload :inner-conditional)= and the library will be installed along with all
   the dependencies
@@ -102,19 +102,19 @@ Removing conditional jumps in loops are one of the easiest way to
 optimize the loop. The number of checks should be minimized, and the
 checking variables in a smaller loop may well be a large
 bottleneck. Yet, some code would yield a bad-looking result of that
-optimization, since the semantics of the code best fits the code
-which has conditional jumps in a smaller loop. Luckily, Common Lisp
-has macros and modifies the looking of the code and I worked a bit
-on it.
+optimization, since the semantics of the code best fits the code which
+has conditional jumps in a smaller loop. Luckily, Common Lisp has
+macros, providing the ability to freely modify the looking of the
+code. I just worked a bit on it.
 
 **  Macro (with-inner (label) &body body)
 
 Simply, the macro =with-inner= creates many versions of (looping)
-programs, move the conditional jumps to the first entry and run one of
-those codes. Inside each program the jump code is deleted. Just
-simple.
+programs, move the conditional jumps to the first entry and run the
+chosen version of those codes. Inside each program the jump code is
+deleted. Just simple.
 
-** Macro (inner (label) conditional-clause)
+** Local Macro-like clause (inner (label) conditional-clause)
 
 Inside the body of =with-inner=, you can specify a certain
 code to be out of the loop with =inner=. Note that conditional-clause
@@ -136,11 +136,14 @@ will be expanded like this:
       (body nil)))
 #+END_SRC
 
-This is because the actual body of the loop is expanded by the local
-macro bounded to =body=. In this case, if =<condition>= fails the loop
-code will not be run at all unless there is a code-modification. The
-local macro is bounded to =label=, so you are able to use different
-layers at the same time.
+This is because the actual body of the loop is expanded by the *local
+macro* bounded to =body=. In this case, if =<condition>= fails the
+loop code will not be run at all unless there is a
+code-modification. The local macro is bounded to =label=, so you are
+able to use the different layers at the same time. (However
+unfortunately, =with-inner= won't work with my favorite =iterate=
+library, since =iter= macro signals an error when it finds 
+=macrolet= in the body of the code.)
 
 #+BEGIN_SRC LISP
 (defun test0 (flag)
