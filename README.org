@@ -1,12 +1,14 @@
 * Inner-Conditional
 
- - Series of macros which optimizes out the inner conditional jumps
+ - Series of macros which optimizes the inner conditional jumps
+   of looping, iterating, anything
  - Extensible syntaxes and helper macros
  - A kind of idea as `compile-time continuation'
 
 ** Usage
 
 #+begin_src lisp
+
 (defun test0 (flag)
   (with-inner (body)
     (iter (for i from 0 to 5)
@@ -27,9 +29,11 @@ INNER-CONDITIONAL-TEST> (test0 t)
 #+end_src
 
 Now, this is the macroexpand-1 of the =with-inner= code above.
+You would see how it works.
 The condition checking is done only once.
 
 #+begin_src lisp
+
 (MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
              (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1364
                     '(WITH-INNER (BODY)
@@ -45,6 +49,7 @@ The condition checking is done only once.
 macroexpand again, then we get the code below:
 
 #+begin_src lisp
+
 (MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
              (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1365
                     '(PROGN
@@ -57,7 +62,6 @@ macroexpand again, then we get the code below:
       (BODY (PRINC "loop off"))))
 #+end_src
 
-You would see how it works.
 
 ** Dependencies
 
@@ -95,6 +99,25 @@ Also, it depends on the following libraries:
 + Masataro Asai (guicho2.71828@gmail.com)
 
 * Concepts and API
+
+Removing conditional jumps in loops are one of the easiest way to
+optimize the loop. The number of checks should be minimized, and the
+checking variables in a smaller loop may well be a large
+bottleneck. Yet, some code would yield a bad-looking result of that
+optimization, since the semantics of the code best fits the code
+which has conditional jumps in a smaller loop. Luckily, Common Lisp
+has macros and modifies the looking of the code and I worked a bit
+on it.
+
+=Macro with-inner ((label) &body body)=
+
+Simply, the macro =with-inner= creates many versions of (looping)
+programs, move the conditional jumps to the first entry and run one of
+those codes. Inside each program the jump code is deleted. Just
+simple.
+
+Inside the body of =with-inner=, if you want to specify a certain
+code to be out of the loop
 
 
 
