@@ -73,34 +73,63 @@
 ;; or should be still here for extension?
 
 @export
-(defmacro define-inner-conditional (name macro-lambda-list body)
-  `(defmacro ,name ,`(label ,@macro-lambda-list)
+(defmacro define-inner-conditional (name label macro-lambda-list body)
+  `(defmacro ,name (,label ,@macro-lambda-list)
 	 `(inner (,label)
 		,,body)))
 
 @export
-(define-inner-conditional inner-when (condition &body body)
+(define-inner-conditional inner-when label (condition &body body)
   `(when ,condition
-	 ,@body))
+	 (,label ,@body)))
 
 @export
-(define-inner-conditional inner-if (condition then else)
-  `(if ,condition ,then ,else))
+(define-inner-conditional inner-if label (condition then else)
+  `(if ,condition
+	   (,label ,then)
+	   (,label ,else)))
 
 @export
-(define-inner-conditional inner-cond (&body clauses)
-  `(cond ,@clauses))
+(define-inner-conditional inner-cond label (&body clauses)
+  `(cond
+	 ,@(mapcar (lambda (clause)
+				 (match clause
+				   ((cons condition body)
+					`(,condition (,label ,@body)))))
+			   clauses)))
 
 
 @export
-(define-inner-conditional inner-case (keyform &body cases)
-  `(case ,keyform ,@cases))
+(define-inner-conditional inner-case label (keyform &body cases)
+  `(case ,keyform
+	 ,@(mapcar (lambda (case)
+				 (match case
+				   ((cons key body)
+					`(,key (,label ,@body)))))
+			   cases)))
+
 @export
-(define-inner-conditional inner-ecase (keyform &body cases)
-  `(ecase ,keyform ,@cases))
+(define-inner-conditional inner-ecase label (keyform &body cases)
+  `(ecase ,keyform
+	 ,@(mapcar (lambda (case)
+				 (match case
+				   ((cons key body)
+					`(,key (,label ,@body)))))
+			   cases)))
 @export
-(define-inner-conditional inner-ccase (keyform &body cases)
-  `(ccase ,keyform ,@cases))
+(define-inner-conditional inner-ccase label (keyform &body cases)
+  `(ccase ,keyform
+	 ,@(mapcar (lambda (case)
+				 (match case
+				   ((cons key body)
+					`(,key (,label ,@body)))))
+			   cases)))
 @export
-(define-inner-conditional inner-typecase (keyform &body cases)
-  `(typecase ,keyform ,@cases))
+(define-inner-conditional inner-typecase label (keyform &body cases)
+  `(typecase ,keyform
+	 ,@(mapcar (lambda (case)
+				 (match case
+				   ((cons key body)
+					`(,key (,label ,@body)))))
+			   cases)))
+

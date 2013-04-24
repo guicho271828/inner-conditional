@@ -212,9 +212,9 @@ similar macros can be defined with =define-inner-conditional=.
 Usage Example:
 
 #+BEGIN_SRC LISP
-(define-inner-conditional inner-when (condition &body body)
+(define-inner-conditional inner-when label (condition &body body)
   `(when ,condition
-	 ,@body))
+	 (,label ,@body)))
 #+END_SRC
 
 Then the macroexpantion of
@@ -230,8 +230,8 @@ is
 #+BEGIN_SRC LISP
 (INNER (LABEL)
   (WHEN <CONDITION>
-    (DOSOMETHING)
-    (DOSOMETHING)))
+    (LABEL (DOSOMETHING)
+           (DOSOMETHING))))
 #+END_SRC
 
 Just simple. Simple!

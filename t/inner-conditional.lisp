@@ -15,6 +15,20 @@
 
 ;; blah blah blah.
 
+;; (inner-if label <condition>
+;;   (dosomething)
+;;   (dosomething))
+
+;; (inner-cond label
+;;   ((evenp a) (dosomething))
+;;   ((oddp a) (dosomething) (dootherthing))
+;;   (t (dosomething)))
+
+;; (inner-case label thing
+;;   (a (dosomething))
+;;   (b (dosomething) (dootherthing))
+;;   (t (dosomething)))
+
 (defun test0 (flag)
   (with-inner (body)
     (loop for i from 0 to 5
