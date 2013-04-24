@@ -1,0 +1,109 @@
+* Inner-Conditional
+
+ - Series of macros which optimizes out the inner conditional jumps
+ - Extensible syntaxes and helper macros
+ - A kind of idea as `compile-time continuation'
+
+** Usage
+
+#+begin_src lisp
+(defun test0 (flag)
+  (with-inner (body)
+    (iter (for i from 0 to 5)
+          (print i)
+          (inner (body)
+            (if flag
+                (body (princ "loop on"))
+                (body (princ "loop off")))))))
+
+INNER-CONDITIONAL-TEST> (test0 t)
+
+0 loop on
+1 loop on
+2 loop on
+3 loop on
+4 loop on
+5 loop on
+#+end_src
+
+Now, this is the macroexpand-1 of the =with-inner= code above.
+The condition checking is done only once.
+
+#+begin_src lisp
+(MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
+             (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1364
+                    '(WITH-INNER (BODY)
+                       (ITER
+                         (FOR I FROM 0 TO 5)
+                         (PRINT I)
+                         #:CONDITIONAL-TAG1364)))))
+  (IF FLAG
+      (BODY (PRINC "loop on"))
+      (BODY (PRINC "loop off"))))
+#+end_src
+
+macroexpand again, then we get the code below:
+
+#+begin_src lisp
+(MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
+             (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1365
+                    '(PROGN
+                      (ITER
+                        (FOR I FROM 0 TO 5)
+                        (PRINT I)
+                        #:CONDITIONAL-TAG1365)))))
+  (IF FLAG
+      (BODY (PRINC "loop on"))
+      (BODY (PRINC "loop off"))))
+#+end_src
+
+You would see how it works.
+
+** Dependencies
+
+This library is at least tested on implementation listed below:
+
++ SBCL 1.1.2 on X86-64 Linux  3.2.0-39-generic (author's environment)
+
+Also, it depends on the following libraries:
+
++ ITERATE  ::
+    Jonathan Amsterdam's iterator/gatherer/accumulator facility
+
++ ALEXANDRIA  ::
+    Alexandria is a collection of portable public domain utilities.
+
++ CL-ANNOT by Tomohiro Matsuyama ::
+    Python-like Annotation Syntax for Common Lisp
+
++ CL-SYNTAX by m2ym ::
+    Reader Syntax Coventions for Common Lisp and SLIME
+
++ Optima by m2ym :: 
+    Optimized Pattern Matching Library for Common Lisp
+    
+** Installation
+
++ First grab the code with =git clone git@github.com:guicho271828/inner-conditional.git=
++ Put it in local-project folder
++ open slime REPL
++ =(ql:quickload :inner-conditional)= and the library will be installed along with all
+  the dependencies
+
+** Author
+
++ Masataro Asai (guicho2.71828@gmail.com)
+
+* Concepts and API
+
+
+
+* Copyright
+
+Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
+
+
+* License
+
+Licensed under the LLGPL License.
+
