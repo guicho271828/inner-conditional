@@ -78,7 +78,6 @@
 	 `(inner (,label)
 		,,body)))
 
-
 @export
 (define-inner-conditional inner-when (condition &body body)
   `(when ,condition
@@ -89,19 +88,19 @@
   `(if ,condition ,then ,else))
 
 @export
-(define-inner-conditional inner-cond (&rest clauses)
+(define-inner-conditional inner-cond (&body clauses)
   `(cond ,@clauses))
 
 
 @export
-(define-inner-conditional inner-case (keyform &rest cases)
+(define-inner-conditional inner-case (keyform &body cases)
   `(case ,keyform ,@cases))
 @export
-(define-inner-conditional inner-ecase (keyform &rest cases)
+(define-inner-conditional inner-ecase (keyform &body cases)
   `(ecase ,keyform ,@cases))
 @export
-(define-inner-conditional inner-ccase (keyform &rest cases)
+(define-inner-conditional inner-ccase (keyform &body cases)
   `(ccase ,keyform ,@cases))
 @export
-(define-inner-conditional inner-typecase (keyform &rest cases)
+(define-inner-conditional inner-typecase (keyform &body cases)
   `(typecase ,keyform ,@cases))

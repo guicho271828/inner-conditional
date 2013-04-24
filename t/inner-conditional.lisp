@@ -61,19 +61,19 @@
 
 (defun test2 (arg)
   (let ((count 0))
-	(with-inner (body)
-	  (iter
-		(for i from 0 to 5)
-		(inner (body)
-		  (case (progn (incf count)
-					   (mod arg 3))
-			(0 (body (format t "divided. i*3 =~a~%"
-							 (* i 3))))
-			(1 (body (format t "modulo 1. i*3 + 1 =~a~%"
-							 (+ 1 (* i 3)))))
-			(2 (body (format t "modulo 2. i*3 + 2 =~a~%"
-							 (+ 2 (* i 3)))))))))
-	(is count 1 "the condition is checked only once")))
+    (with-inner (body)
+      (iter
+        (for i from 0 to 5)
+        (inner (body)
+          (case (progn (incf count)
+                       (mod arg 3))
+            (0 (body (format t "divided. i*3 =~a~%"
+                             (* i 3))))
+            (1 (body (format t "modulo 1. i*3 + 1 =~a~%"
+                             (+ 1 (* i 3)))))
+            (2 (body (format t "modulo 2. i*3 + 2 =~a~%"
+                             (+ 2 (* i 3)))))))))
+    (is count 1 "the condition is checked only once")))
 
 (test2 0)
 (test2 1)

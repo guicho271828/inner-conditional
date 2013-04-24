@@ -161,8 +161,82 @@ library, since =iter= macro signals an error when it finds
                    (if flag
                        (body (format t "  loop on"))
                        (body (format t "  loop off")))))))))
-
 #+END_SRC
+
+** Using other kinds of clauses
+
+Once you have understood how it works, you don't have to be afraid of
+using other conditional clauses like cond, case, etc. All you have to
+do is calling =label= . This =label= can be interpreted as a
+compile-time continuation. It may sound odd but everything's in the
+right place isnt it?
+
+#+BEGIN_SRC LISP
+(defun test2 (arg)
+  (let ((count 0))
+    (with-inner (body)
+      (iter
+        (for i from 0 to 5)
+        (inner (body)
+          (case (progn (incf count)
+                       (mod arg 3))
+            (0 (body (format t "divided. i*3 =~a~%"
+                             (* i 3))))
+            (1 (body (format t "modulo 1. i*3 + 1 =~a~%"
+                             (+ 1 (* i 3)))))
+            (2 (body (format t "modulo 2. i*3 + 2 =~a~%"
+                             (+ 2 (* i 3)))))))))
+    (is count 1 "the condition is checked only once")))
+
+(test2 0)
+(test2 1)
+(test2 2)
+#+END_SRC
+
+** And more
+
+OK, you may want to use a normal-looking clauses similar to =when= or
+=cond= and not to use a combination of =inner= and local macro bounded
+to =label=. In that case, use =inner-when= or =inner-if= etc.
+
+: (inner-if label condition then else)
+: (inner-when label condition &body body)
+: (inner-cond label &body clauses)
+: (inner-case label keyform &body cases)
+: (inner-ecase label keyform &body cases)
+: (inner-ccase label keyform &body cases)
+: (inner-typecase label keyform &body cases)
+
+similar macros can be defined with =define-inner-conditional=.
+
+Usage Example:
+
+#+BEGIN_SRC LISP
+(define-inner-conditional inner-when (condition &body body)
+  `(when ,condition
+	 ,@body))
+#+END_SRC
+
+Then the macroexpantion of
+
+#+BEGIN_SRC LISP
+(inner-when label <condition>
+  (dosomething)
+  (dosomething))
+#+END_SRC
+
+is
+
+#+BEGIN_SRC LISP
+(INNER (LABEL)
+  (WHEN <CONDITION>
+    (DOSOMETHING)
+    (DOSOMETHING)))
+#+END_SRC
+
+Just simple. Simple!
+If you have any question with how it works, try some macroexpand-1,
+or C-c C-m (slime-expand-1).
 
 * Copyright
 
