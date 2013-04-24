@@ -7,8 +7,7 @@
 
 ** Usage
 
-#+begin_src lisp
-
+#+BEGIN_SRC LISP
 (defun test0 (flag)
   (with-inner (body)
     (iter (for i from 0 to 5)
@@ -26,14 +25,13 @@ INNER-CONDITIONAL-TEST> (test0 t)
 3 loop on
 4 loop on
 5 loop on
-#+end_src
+#+END_SRC
 
 Now, this is the macroexpand-1 of the =with-inner= code above.
 You would see how it works.
 The condition checking is done only once.
 
-#+begin_src lisp
-
+#+BEGIN_SRC LISP
 (MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
              (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1364
                     '(WITH-INNER (BODY)
@@ -44,11 +42,11 @@ The condition checking is done only once.
   (IF FLAG
       (BODY (PRINC "loop on"))
       (BODY (PRINC "loop off"))))
-#+end_src
+#+END_SRC
 
 macroexpand again, then we get the code below:
 
-#+begin_src lisp
+#+BEGIN_SRC LISP
 
 (MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
              (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1365
@@ -60,7 +58,7 @@ macroexpand again, then we get the code below:
   (IF FLAG
       (BODY (PRINC "loop on"))
       (BODY (PRINC "loop off"))))
-#+end_src
+#+END_SRC
 
 
 ** Dependencies
@@ -109,17 +107,59 @@ which has conditional jumps in a smaller loop. Luckily, Common Lisp
 has macros and modifies the looking of the code and I worked a bit
 on it.
 
-=Macro with-inner ((label) &body body)=
+**  Macro (with-inner (label) &body body)
 
 Simply, the macro =with-inner= creates many versions of (looping)
 programs, move the conditional jumps to the first entry and run one of
 those codes. Inside each program the jump code is deleted. Just
 simple.
 
-Inside the body of =with-inner=, if you want to specify a certain
-code to be out of the loop
+** Macro (inner (label) conditional-clause)
 
+Inside the body of =with-inner=, you can specify a certain
+code to be out of the loop with =inner=. Note that conditional-clause
+should be only one S-exp. Any expression is ok, but =when= needs
+a special care. For example,
 
+#+BEGIN_SRC LISP
+(inner (body)
+  (when <condition>
+    (body (dosomething))))
+#+END_SRC
+
+will be expanded like this:
+
+#+BEGIN_SRC LISP
+(inner (body)
+  (if <condition>
+      (body (dosomething))
+      (body nil)))
+#+END_SRC
+
+This is because the actual body of the loop is expanded by the local
+macro bounded to =body=. In this case, if =<condition>= fails the loop
+code will not be run at all unless there is a code-modification. The
+local macro is bounded to =label=, so you are able to use different
+layers at the same time.
+
+#+BEGIN_SRC LISP
+(defun test0 (flag)
+  (with-inner (body)
+    (loop for i from 0 to 5
+       do (with-inner (body2)
+            (loop for j from 0 to 5
+                 do
+                 (format t "~%i: ~a j: ~a" i j)
+                 (inner (body2)
+                   (if (evenp i)
+                       (body2 (format t "  i is even"))
+                       (body2 (format t "  i is odd"))))
+                 (inner (body)
+                   (if flag
+                       (body (format t "  loop on"))
+                       (body (format t "  loop off")))))))))
+
+#+END_SRC
 
 * Copyright
 

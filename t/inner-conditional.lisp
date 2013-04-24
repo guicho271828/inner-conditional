@@ -17,13 +17,22 @@
 
 (defun test0 (flag)
   (with-inner (body)
-    (iter (for i from 0 to 5)
-          (print i)
-          (inner (body)
-            (if flag
-                (body (princ "loop on"))
-                (body (princ "loop off")))))))
+    (loop for i from 0 to 5
+       do (with-inner (body2)
+            (loop for j from 0 to 5
+                 do
+                 (format t "~%i: ~a j: ~a" i j)
+                 (inner (body2)
+                   (if (evenp i)
+                       (body2 (format t "  i is even"))
+                       (body2 (format t "  i is odd"))))
+                 (inner (body)
+                   (if flag
+                       (body (format t "  loop on"))
+                       (body (format t "  loop off")))))))))
 
+(test0 t)
+(test0 nil)
 
 (defun test1 (flag1 flag2)
   (let ((count1 0)
