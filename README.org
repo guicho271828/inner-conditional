@@ -89,11 +89,12 @@ Also, it depends on the following libraries:
     
 ** Installation
 
-+ First grab the code with =git clone git@github.com:guicho271828/inner-conditional.git=
++ First grab the code with =git clone git://github.com/guicho271828/inner-conditional.git=
 + Put it in your local-project folder
 + open slime REPL
-+ =(ql:quickload :inner-conditional)= and the library will be installed along with all
-  the dependencies
++ =(ql:register-local-projects)=
++ =(ql:quickload :inner-conditional)= and the library will be
+  installed along with the dependencies
 
 ** Author
 
