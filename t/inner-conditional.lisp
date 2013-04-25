@@ -27,8 +27,8 @@
                        (body2 (format t "  i is even"))
                        (body2 (format t "  i is odd"))))
                  (inner-if body flag
-						   (body (format t "  loop on"))
-						   (body (format t "  loop off"))))))))
+						   (format t "  loop on")
+						   (format t "  loop off")))))))
 
 (test0 t)
 (test0 nil)

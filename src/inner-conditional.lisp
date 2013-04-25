@@ -88,7 +88,8 @@ convert =when= if necessary."
 		   (precompile-directives body)))
 	(values first conditional-body macrolet-body)))
 
-(defun call-with-inner (args body)
+(defun call-with-inner (args body &key force-single-check)
+  @ignore force-single-check
   (destructuring-bind (label) args
 	(with-gensyms (tag)
 	  (multiple-value-bind (first conditional-body macrolet-body)
@@ -96,11 +97,10 @@ convert =when= if necessary."
 		(if first
 			`(progn ,@body)
 			`(macrolet ((,label (&rest sexp)
-						  `(with-inner (,',label)
-							 (macrolet ((,',tag nil
-							 			  `(progn ,',@sexp)))
-							   ,',@macrolet-body)
-							 )))
+						  `(macrolet ((,',tag ()
+									   `(progn ,',@sexp)))
+							 (with-inner (,',label)
+							   ,@',macrolet-body))))
 			   ,conditional-body))))))
 
 ;; no cool at all. should be ommited?
@@ -170,16 +170,18 @@ convert =when= if necessary."
 			   cases)))
 
 
-@export
-(defmacro define-inner-condition-with-label
-	(name label macro-lambda-list &body body)
-  (pushnew name *precompiling-directives*)
-  `(defmacro ,name ,macro-lambda-list
-	 `(inner (,,label)
-		,,@body)))
 
 @export
-(defmacro define-condition-expander (name id)
-  `(defmacro ,name (&body body)
-	 `(with-inner (,,id)
-		,@body)))
+(defmacro define-condition-expander
+	(name expander-id expander-name
+	 (&key force-single-check)
+	 macro-lambda-list &body body)
+  @ignore force-single-check
+  (pushnew name *precompiling-directives*)
+  `(progn
+	 (defmacro ,expander-name (&body body)
+	   `(with-inner (,,expander-id)
+		  ,@body))
+	 (defmacro ,name ,macro-lambda-list
+	   `(inner (,,expander-id)
+		  ,,@body))))
