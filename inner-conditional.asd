@@ -20,8 +20,7 @@
   :license "LLGPL"
   :depends-on (:iterate
                :alexandria
-               :cl-syntax
-			   :cl-annot
+			   :cl-syntax-annot
 			   :optima)
   :components ((:module "src"
                 :components

@@ -41,6 +41,7 @@
   
 
 @export
+@doc "just defined in order to provide the editor support."
 (defmacro inner ((label) &body body)
   @ignore label body)
 

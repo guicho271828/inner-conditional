@@ -8,6 +8,9 @@
 ** Usage
 
 #+BEGIN_SRC LISP
+(ql:quickload :iterate)
+(use-package :iterate)
+
 (defun test0 (flag)
   (with-inner (body)
     (iter (for i from 0 to 5)
