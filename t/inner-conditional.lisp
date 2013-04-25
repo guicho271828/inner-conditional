@@ -15,20 +15,6 @@
 
 ;; blah blah blah.
 
-;; (inner-if label <condition>
-;;   (dosomething)
-;;   (dosomething))
-
-;; (inner-cond label
-;;   ((evenp a) (dosomething))
-;;   ((oddp a) (dosomething) (dootherthing))
-;;   (t (dosomething)))
-
-;; (inner-case label thing
-;;   (a (dosomething))
-;;   (b (dosomething) (dootherthing))
-;;   (t (dosomething)))
-
 (defun test0 (flag)
   (with-inner (body)
     (loop for i from 0 to 5
@@ -40,10 +26,9 @@
                    (if (evenp i)
                        (body2 (format t "  i is even"))
                        (body2 (format t "  i is odd"))))
-                 (inner (body)
-                   (if flag
-                       (body (format t "  loop on"))
-                       (body (format t "  loop off")))))))))
+                 (inner-if body flag
+						   (body (format t "  loop on"))
+						   (body (format t "  loop off"))))))))
 
 (test0 t)
 (test0 nil)
@@ -59,12 +44,11 @@
                       (incf count1)
                       flag1)
                 (body (diag "loop"))))
-            (inner (body)
-              (if (progn
-                    (incf count2)
-                    flag2)
-                  (body (diag "loop2 on"))
-                  (body (diag "loop2 off"))))))
+            (inner-if body (progn
+							 (incf count2)
+							 flag2)
+					  (diag "loop2 on")
+					  (diag "loop2 off"))))
     (is count1 1 "the condition is checked only once")
     (is count2 1 "the condition is checked only once")))
 

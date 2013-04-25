@@ -5,79 +5,114 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional
-  (:use :cl :optima :alexandria))
+  (:use :cl :optima :iterate :annot.doc :annot.eval-when :alexandria))
 (in-package :inner-conditional)
 
 ;; blah blah blah.
 (cl-syntax:use-syntax :annot)
 
+@export
+(defmacro with-inner ((&whole args label) &body body)
+  (call-with-inner args body))
+
+@eval-always
+@export
+(defvar *precompiling-directives* nil)
+
+(defun walk-tree (fn tree)
+  (mapcar (lambda (branch)
+			(funcall fn branch
+					 (lambda (branch)
+					   (walk-tree fn branch))))
+		  tree))
+
+(defun precompile-directives (form)
+  (walk-tree
+   (lambda (subform cont)
+	 (iter (with expanded = subform)
+		   (when (member (typecase expanded
+						   (cons (car expanded))
+						   (symbol expanded))
+						 *precompiling-directives*)
+			 (setf expanded (macroexpand-1 subform))
+			 (next-iteration))
+		   (return (if (consp expanded)
+					   (funcall cont expanded)
+					   expanded))))
+   form))
+
+@export
+@doc "Defined in order to provide the editor support.
+This code will be expanded only when no =with-inner=
+is wrapping it. It just ignores =label= and put the body
+where it is originally located."
+(defmacro inner ((label) &body body)
+  `(macrolet ((,label (&rest sexp)
+				`(progn ,@sexp)))
+	 ,@body))
+
 (defpattern when (condition body)
   `(list* 'when ,condition ,body))
-
 (defpattern if (condition then else)
   `(list 'if ,condition ,then ,else))
-
 (defpattern cond (clauses)
   `(list 'cond
 		 ,@(mapcar (lambda (clause)
 					 `(list* ,@clause)) clauses)))
 
-@export
-(defmacro with-inner ((&whole args label) &body body)
-  (call-with-inner args body))
-
 (defpattern inner (label body)
   `(list 'inner (list (eq ,label))
 		 ,body))
 
+@doc "check whether =elem= is a =inner= clause.
+convert =when= if necessary."
 (defun match-inner (label elem)
   (match elem
 	((inner label (when cond body))
-	 (values t `(if ,cond
-					,@body
-					(,label nil))))
-	((inner label body)
-	 (values t body))))
-  
+	 `(if ,cond
+		  ,@body
+		  (,label nil)))
+	((inner label body) body)))
 
-@export
-@doc "just defined in order to provide the editor support."
-(defmacro inner ((label) &body body)
-  @ignore label body)
+(defun convert-first-conditional (body tag label)
+  (let ((first t) conditional-body macrolet-body)
+	(setf macrolet-body
+		  (subst-if
+		   `(,tag)
+		   #'(lambda (elem)
+			   (when first
+				 (let ((body (match-inner label elem)))
+				   (when body
+					 (setf first nil conditional-body body)
+					 t))))
+		   (precompile-directives body)))
+	(values first conditional-body macrolet-body)))
 
 (defun call-with-inner (args body)
   (destructuring-bind (label) args
-	(with-gensyms (conditional-tag)
-	  (let ((conditional-body nil)
-			(first t))
-		(let ((new-body
-			   (subst-if
-				conditional-tag
-				#'(lambda (elem)
-					(and first
-						 (multiple-value-bind (flag body)
-							 (match-inner label elem)
-						   (when flag
-							 (setf conditional-body body
-								   first nil))
-						   flag)))
-				body)))
-		  (if first
-			  `(progn ,@body)
-			  `(macrolet ((,label (&rest sexp)
-							(subst `(progn ,@sexp) ',conditional-tag
-								   '(with-inner (,label)
-									 ,@new-body))))
-				 ,conditional-body)))))))
+	(with-gensyms (tag)
+	  (multiple-value-bind (first conditional-body macrolet-body)
+		  (convert-first-conditional body tag label)
+		(if first
+			`(progn ,@body)
+			`(macrolet ((,label (&rest sexp)
+						  `(with-inner (,',label)
+							 (macrolet ((,',tag nil
+							 			  `(progn ,',@sexp)))
+							   ,',@macrolet-body)
+							 )))
+			   ,conditional-body))))))
 
 ;; no cool at all. should be ommited?
 ;; or should be still here for extension?
 
 @export
-(defmacro define-inner-conditional (name label macro-lambda-list body)
+(defmacro define-inner-conditional
+	(name label macro-lambda-list &body body)
+  (pushnew name *precompiling-directives*)
   `(defmacro ,name (,label ,@macro-lambda-list)
 	 `(inner (,label)
-		,,body)))
+		,,@body)))
 
 @export
 (define-inner-conditional inner-when label (condition &body body)
@@ -134,3 +169,17 @@
 					`(,key (,label ,@body)))))
 			   cases)))
 
+
+@export
+(defmacro define-inner-condition-with-label
+	(name label macro-lambda-list &body body)
+  (pushnew name *precompiling-directives*)
+  `(defmacro ,name ,macro-lambda-list
+	 `(inner (,,label)
+		,,@body)))
+
+@export
+(defmacro define-condition-expander (name id)
+  `(defmacro ,name (&body body)
+	 `(with-inner (,,id)
+		,@body)))
