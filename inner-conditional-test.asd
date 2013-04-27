@@ -15,5 +15,7 @@
                :cl-test-more)
   :components ((:module "t"
                 :components
-                ((:file "inner-conditional"))))
+                ((:file :inner-conditional)
+				 (:file :extension-sample)
+				 (:file :extension-sample2))))
   :perform (load-op :after (op c) (asdf:clear-system c)))

@@ -10,13 +10,17 @@
 (defvar *output-stream* nil)
 
 (define-condition-expander
-	sample *sample-label* *output-stream-definite-here*
-	(:force-single-check t)
+	(sample *sample-label* *output-stream-definite-here*
+			:force-single-check t
+			:version-expander version)
 	(&body body)
   `(if *output-stream*
-	 (,*sample-label* ,@body)
-	 (with-output-to-string (*output-stream*)
-	   (,*sample-label* ,@body))))
+	   ,(version 'output-stream-exists
+				 `(progn ,@body))
+	   ,(version 'output-stream-does-not-exists
+				 `(with-output-to-string (*output-stream*)
+					,@body))))
+
 
 (defun test1 ()
   (let ((*output-stream* t))
