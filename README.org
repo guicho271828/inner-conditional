@@ -279,28 +279,31 @@ For example:
          ,@body)))
 #+END_SRC
 
-In this sample, =body= is meant for output some string to a predefined
-stream which is dynamically bound but =*output-stream*= is
-bound to nil by default. This means the library allows the user to
-output the result as a string by default. Similar technique is used
-in =cl-markup= , for example. (I was inspired by the introduction of
-that library.)
+In this sample, =body= is meant to output some string to a stream
+which is dynamically bound. By default, =*output-stream*= is bound to
+nil and the the result is output as a string. Similar technique is
+used in =[[https://github.com/arielnetworks/cl-markup][cl-markup]]= for example. 
+In some cases a user should run a loop over that macro.
 
-However in some case a user should run a loop with that macro. The
-author may want to divide that conditional part of the code, but
+#+BEGIN_SRC LISP
+(loop for i from 0 to 5
+      do (sample (print i *output-stream*)))
+#+END_SRC
+
+The author may want to divide that conditional part of the code, but
 until now there is no standardized way to do that. Now I show you
-another version using this library.
+a version using this library.
 
 #+BEGIN_SRC LISP
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *sample-label* 'sample-label))
+  (defparameter *sample-label* 'sample-label)) ;; an identifier
 
 (defvar *output-stream* nil)
 
 (define-condition-expander
     (sample *sample-label* *output-stream-definite-here*
             :force-single-check t
-            :version-expander version)  
+            :version-expander version)
     (&body body)
   `(if (progn
          (format t "condition checked")
@@ -323,7 +326,7 @@ another version using this library.
 
 In the above example, the user doesn't have to think about the
 conditional jumping within =sample= *and at the same time* the jump
-is checked only once. Below is the sequence of iteratively macroexpanded codes.
+is checked only once. Below is the iterative results of macroexpansion.
 
 #+BEGIN_SRC LISP
 (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
@@ -386,6 +389,22 @@ is checked only once. Below is the sequence of iteratively macroexpanded codes.
       (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
           EITHER-IS-OK
           (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK)))))
+#+END_SRC
+
+Therefore the expansion result is equivalent to something like this:
+
+#+BEGIN_SRC LISP
+(IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
+    (PROGN
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!"))))
+    (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*)
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
 #+END_SRC
 
 * Copyright
