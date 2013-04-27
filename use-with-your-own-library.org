@@ -2,7 +2,7 @@
 
 If you write a macro which expands to a code which always checks a
 certain dynamic variable then this library may help you write an
-extension which minimizes the number of checking in the expanded code.
+extension which minimizes the number of checks in the expanded code.
 
 For example:
 

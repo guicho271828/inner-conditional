@@ -15,7 +15,7 @@
 (in-package :inner-conditional-asd)
 
 (defsystem inner-conditional
-  :version "0.1"
+  :version "0.1.0"
   :author "Masataro Asai"
   :license "LLGPL"
   :depends-on (:iterate

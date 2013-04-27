@@ -49,7 +49,7 @@ For more details, see /Concepts and API/ (https://github.com/guicho271828/inner-
 
 If you write a macro which expands to a code which always checks a
 certain dynamic variable then this library may help you write an
-extension which minimizes the number of checking in the expanded code.
+extension which minimizes the number of checks in the expanded code.
 
 For more details, see /Use with your own library/ (https://github.com/guicho271828/inner-conditional/blob/master/use-with-your-own-library.org)
 
