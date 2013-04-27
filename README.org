@@ -1,9 +1,10 @@
 * Inner-Conditional
 
- - Series of macros which optimize the inner conditional jumps
-   of looping, iterating, anything
- - A kind of idea as `compile-time continuation'
- - Extensible syntaxes and helper macros for other implementers of libraries
++ Series of macros which help users optimize the conditional jumps in a inner loop
++ The interface is similar to the continuation, so I call it as `compile-time continuation’.
+   Everything is implemented in compile-time so theres no performance drawbacks in run-time
++ Extensible syntaxes and helper macros for other implementers of libraries, especially for 
+   the macro writers or the heavy lambda-lovers. Provides a standardized way to minimize the number of condition check
 
 * Basic Usage
 
