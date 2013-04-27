@@ -11,16 +11,36 @@
        (with-output-to-string (*output-stream*)
          ,@body)))
 
+(defconstant +loop+ 50000000)
+
 (defun test-speed-without-inner ()
-  (loop for i from 0 to 5000000
+  (with-open-file (*output-stream* "/dev/null"
+								   :direction :output
+								   :if-exists :overwrite)
+	(loop for i from 0 to +loop+
+	   do
+		 (sample
+		   (write-string "hello!" *output-stream*)))
+	(loop for i from 0 to +loop+
+	   do
+		 (sample
+		   (write-string "yep!" *output-stream*)))
+	(loop for i from 0 to +loop+
+	   do
+		 (sample
+		   (write-string "bye!" *output-stream*)))))
+
+
+(defun test-speed-without-inner-to-string ()
+  (loop for i from 0 to +loop+
 	 do
 	   (sample
 		 (write-string "hello!" *output-stream*)))
-  (loop for i from 0 to 5000000
+  (loop for i from 0 to +loop+
 	 do
 	   (sample
 		 (write-string "yep!" *output-stream*)))
-  (loop for i from 0 to 5000000
+  (loop for i from 0 to +loop+
 	 do
 	   (sample
 		 (write-string "bye!" *output-stream*))))

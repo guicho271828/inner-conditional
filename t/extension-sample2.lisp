@@ -21,20 +21,42 @@
        (with-output-to-string (*output-stream*)
          ,(version 'either-is-ok `(progn ,@body)))))
 
-(defun test-speed-with-inner ()
+(defconstant +loop+ 50000000)
+(defun test-speed-with-inner-to-string ()
   (*output-stream-definite-here*
-    (loop for i from 0 to 5000000
+    (loop for i from 0 to +loop+
        do
          (sample
            (write-string "hello!" *output-stream*)))
-	(loop for i from 0 to 5000000
+	(loop for i from 0 to +loop+
        do
          (sample
            (write-string "yep!" *output-stream*)))
-    (loop for i from 0 to 5000000
+    (loop for i from 0 to +loop+
        do
          (sample
            (write-string "bye!" *output-stream*)))))
+
+;; (princ "test with-inner-to-string")
+;; (time (test-speed-with-inner-to-string))
+
+(defun test-speed-with-inner ()
+  (with-open-file (*output-stream* "/dev/null"
+								   :direction :output
+								   :if-exists :overwrite)
+	(*output-stream-definite-here*
+	  (loop for i from 0 to +loop+
+		 do
+		   (sample
+			 (write-string "hello!" *output-stream*)))
+	  (loop for i from 0 to +loop+
+		 do
+		   (sample
+			 (write-string "yep!" *output-stream*)))
+	  (loop for i from 0 to +loop+
+		 do
+		   (sample
+			 (write-string "bye!" *output-stream*))))))
 
 (princ "test with-inner")
 (time (test-speed-with-inner))
