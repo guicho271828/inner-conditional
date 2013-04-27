@@ -327,74 +327,9 @@ a version using this library.
 #+END_SRC
 
 In the above example, the user doesn't have to think about the
-conditional jumping within =sample= *and at the same time* the jump
-is checked only once. Below is the iterative results of macroexpansion.
-
-#+BEGIN_SRC LISP
-(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
-  (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
-    (LOOP FOR I FROM 0 TO 5
-          DO (SAMPLE
-               (FORMAT *OUTPUT-STREAM* "hello!")))
-    (LOOP FOR I FROM 0 TO 5
-          DO (SAMPLE
-               (FORMAT *OUTPUT-STREAM* "bye!")))))
-#+END_SRC
-
-#+BEGIN_SRC LISP
-(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
-  (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
-               `(MACROLET ((#:TAG1273 ,NIL
-                             `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
-                  (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
-                                     ,INNER-CONDITIONAL::ID))
-                    (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
-                      (LOOP FOR I FROM 0 TO 5
-                            DO (#:TAG1273))
-                      (LOOP FOR I FROM 0 TO 5
-                            DO (SAMPLE
-                                 (FORMAT *OUTPUT-STREAM* "bye!"))))))))
-    (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
-        ((EITHER-IS-OK
-          (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))))
-      (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
-          EITHER-IS-OK
-          (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK)))))
-
-#+END_SRC
-
-#+BEGIN_SRC LISP
-(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
-  (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
-               `(MACROLET ((#:TAG1273 ,NIL
-                             `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
-                  (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
-                                     ,INNER-CONDITIONAL::ID))
-                    (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
-                                 `(MACROLET ((#:TAG1274 ,NIL
-                                               `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
-                                    (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
-                                                       ,INNER-CONDITIONAL::ID))
-                                      (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
-                                        (LOOP FOR I FROM 0 TO 5
-                                              DO (#:TAG1273))
-                                        (LOOP FOR I FROM 0 TO 5
-                                              DO (#:TAG1274)))))))
-                      (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
-                          ((EITHER-IS-OK
-                            (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
-                        (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
-                            EITHER-IS-OK
-                            (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK))))))))
-    (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
-        ((EITHER-IS-OK
-          (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))))
-      (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
-          EITHER-IS-OK
-          (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK)))))
-#+END_SRC
-
-Therefore the expansion result is equivalent to something like this:
+conditional jumping within =sample= *and at the same time* the jump is
+checked only once. The expansion result is equivalent to something
+like this:
 
 #+BEGIN_SRC LISP
 (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
