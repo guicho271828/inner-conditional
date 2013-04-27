@@ -42,4 +42,4 @@
 	(loop for i from 0 to 5
 	   do
 		 (sample
-		   (format *output-stream* "hello!")))))
+		   (format *output-stream* "bye!")))))
