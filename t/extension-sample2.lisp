@@ -21,6 +21,23 @@
        (with-output-to-string (*output-stream*)
          ,(version 'either-is-ok `(progn ,@body)))))
 
+(defun test-speed-with-inner ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+	(loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
+
+(princ "test with-inner")
+(time (test-speed-with-inner))
 
 (defun test0 ()
   (let ((*output-stream* t))

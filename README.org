@@ -264,7 +264,7 @@ Just simple. Simple!
 If you have any question with how it works, try some macroexpand-1,
 or C-c C-m (slime-expand-1).
 
-** Use with your own library
+* Use with your own library
 
 If you write a macro which expands to a code which always checks a
 certain dynamic variable then this library may help you write an
@@ -345,6 +345,66 @@ like this:
              DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
 #+END_SRC
 
+** Optimization Results
+
+The effect of this library may seems trivial, but still I try to show
+you an optimization results. Any other result report welcome!  Because
+I don't came up with other truly-performanse-sensitive examples.
+
+The test data for this performance test is the macro which I have used
+ in the above example.
+
+*** Without define-condition-expander
+#+BEGIN_SRC lisp
+(defun test-speed-without-inner ()
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "hello!" *output-stream*)))
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "yep!" *output-stream*)))
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "bye!" *output-stream*))))
+
+(time (test-speed-without-inner))
+; Evaluation took:
+;   9.458 seconds of real time
+;   9.496593 seconds of total run time (9.428589 user, 0.068004 system)
+;   [ Run times consist of 1.016 seconds GC time, and 8.481 seconds non-GC time. ]
+;   100.41% CPU
+;   26,484,287,798 processor cycles
+;   7,920,102,160 bytes consed
+#+END_SRC
+*** With define-condition-expander
+#+BEGIN_SRC lisp
+(defun test-speed-with-inner ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+	(loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
+
+(time (test-speed-with-inner))
+; Evaluation took:
+;   1.715 seconds of real time
+;   1.716107 seconds of total run time (1.492093 user, 0.224014 system)
+;   [ Run times consist of 0.056 seconds GC time, and 1.661 seconds non-GC time. ]
+;   100.06% CPU
+;   4,799,707,782 processor cycles
+;   783,221,312 bytes consed
+#+END_SRC
 * Copyright
 
 Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
