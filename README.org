@@ -53,6 +53,15 @@ extension which minimizes the number of checks in the expanded code.
 
 For more details, see /Use with your own library/ (https://github.com/guicho271828/inner-conditional/blob/master/use-with-your-own-library.org)
 
+* Optimization Results
+
+The effect of this library may seem trivial, but still I try to show
+you an optimization results with trivial examples. Any other result
+reports are welcome!  Because I don't came up with other
+truly-performance-sensitive examples.
+
+For more details, see /Optimization Results/ (https://github.com/guicho271828/inner-conditional/blob/master/opt-results.org)
+
 * Misc
 
 ** Dependencies
