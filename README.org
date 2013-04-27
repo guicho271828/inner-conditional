@@ -80,7 +80,7 @@ macros, which provides the ability to walk on and modify the code
 tree. So we can keep the code clean and at the same time get a
 faster result.
 
-For more details, see [[https://github.com/guicho271828/inner-conditional/blob/master/concepts-and-api.org][Concepts and API]]
+For more details, see [[concepts-and-api.org][Concepts and API]]
 
 * Use with your own library
 
