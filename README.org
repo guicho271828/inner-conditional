@@ -289,9 +289,104 @@ that library.)
 However in some case a user should run a loop with that macro. The
 author may want to divide that conditional part of the code, but
 until now there is no standardized way to do that. Now I show you
-another version.
+another version using this library.
 
+#+BEGIN_SRC LISP
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter *sample-label* 'sample-label))
 
+(defvar *output-stream* nil)
+
+(define-condition-expander
+    (sample *sample-label* *output-stream-definite-here*
+            :force-single-check t
+            :version-expander version)  
+    (&body body)
+  `(if (progn
+         (format t "condition checked")
+         *output-stream*)
+       ,(version 'either-is-ok `(progn ,@body))
+       (with-output-to-string (*output-stream*)
+         ,(version 'either-is-ok `(progn ,@body)))))
+
+(defun test2 ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "hello!")))
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "bye!")))))
+#+END_SRC
+
+In the above example, the user doesn't have to think about the
+conditional jumping within =sample= *and at the same time* the jump
+is checked only once. Below is the sequence of iteratively macroexpanded codes.
+
+#+BEGIN_SRC LISP
+(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
+  (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
+    (LOOP FOR I FROM 0 TO 5
+          DO (SAMPLE
+               (FORMAT *OUTPUT-STREAM* "hello!")))
+    (LOOP FOR I FROM 0 TO 5
+          DO (SAMPLE
+               (FORMAT *OUTPUT-STREAM* "bye!")))))
+
+-->
+
+(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
+  (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
+               `(MACROLET ((#:TAG1273 ,NIL
+                             `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
+                  (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
+                                     ,INNER-CONDITIONAL::ID))
+                    (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
+                      (LOOP FOR I FROM 0 TO 5
+                            DO (#:TAG1273))
+                      (LOOP FOR I FROM 0 TO 5
+                            DO (SAMPLE
+                                 (FORMAT *OUTPUT-STREAM* "bye!"))))))))
+    (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
+        ((EITHER-IS-OK
+          (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))))
+      (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
+          EITHER-IS-OK
+          (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK)))))
+
+-->
+
+(SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION* NIL))
+  (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
+               `(MACROLET ((#:TAG1273 ,NIL
+                             `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
+                  (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
+                                     ,INNER-CONDITIONAL::ID))
+                    (MACROLET ((SAMPLE-LABEL (INNER-CONDITIONAL::ID &REST INNER-CONDITIONAL::SEXP)
+                                 `(MACROLET ((#:TAG1274 ,NIL
+                                               `(PROGN ,',@INNER-CONDITIONAL::SEXP)))
+                                    (SYMBOL-MACROLET ((INNER-CONDITIONAL::*CURRENT-VERSION*
+                                                       ,INNER-CONDITIONAL::ID))
+                                      (WITH-INNER (SAMPLE-LABEL :FORCE-SINGLE-CHECK T)
+                                        (LOOP FOR I FROM 0 TO 5
+                                              DO (#:TAG1273))
+                                        (LOOP FOR I FROM 0 TO 5
+                                              DO (#:TAG1274)))))))
+                      (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
+                          ((EITHER-IS-OK
+                            (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
+                        (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
+                            EITHER-IS-OK
+                            (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK))))))))
+    (WITH-VERSIONS INNER-CONDITIONAL::*CURRENT-VERSION*
+        ((EITHER-IS-OK
+          (SAMPLE-LABEL EITHER-IS-OK (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))))
+      (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
+          EITHER-IS-OK
+          (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*) EITHER-IS-OK)))))
+#+END_SRC
 
 * Copyright
 

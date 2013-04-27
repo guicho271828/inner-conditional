@@ -54,7 +54,7 @@
 
 (test1 t t)
 (test1 t nil)
-(test1 nil t)	
+(test1 nil t)
 (test1 nil nil)
 
 (defun test2 (arg)

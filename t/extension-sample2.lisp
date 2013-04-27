@@ -10,40 +10,44 @@
 (defvar *output-stream* nil)
 
 (define-condition-expander
-	(sample *sample-label* *output-stream-definite-here*
-			:force-single-check t
-			:version-expander version)
-	(&body body)
-  `(if *output-stream*
-	   ,(version 'output-stream-exists
-				 `(progn ,@body))
-	   ,(version 'output-stream-does-not-exists
-				 `(with-output-to-string (*output-stream*)
-					,@body))))
+    (sample *sample-label* *output-stream-definite-here*
+            :force-single-check t
+            :version-expander version)  
+    (&body body)
+  `(if (progn
+         (format t "condition checked")
+         *output-stream*)
+       ,(version 'either-is-ok `(progn ,@body))
+       (with-output-to-string (*output-stream*)
+         ,(version 'either-is-ok `(progn ,@body)))))
 
 
-(defun test1 ()
+(defun test0 ()
   (let ((*output-stream* t))
-	(*output-stream-definite-here*
-	  (loop for i from 0 to 5
-		   do
-		   (sample
-			 (format *output-stream* "hello!"))))))
+    (*output-stream-definite-here*
+      (loop for i from 0 to 5
+           do
+           (sample
+             (format *output-stream* "hello!"))))))
 
 (defun test1 ()
   (*output-stream-definite-here*
-	(loop for i from 0 to 5
-	   do
-		 (sample
-		   (format *output-stream* "hello!")))))
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "hello!")))))
 
 (defun test2 ()
   (*output-stream-definite-here*
-	(loop for i from 0 to 5
-	   do
-		 (sample
-		   (format *output-stream* "hello!")))
-	(loop for i from 0 to 5
-	   do
-		 (sample
-		   (format *output-stream* "bye!")))))
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "hello!")))
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "bye!")))))
+
+(test0)
+(test1)
+(test2)

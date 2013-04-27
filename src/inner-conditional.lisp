@@ -14,9 +14,9 @@
 @export
 (defmacro with-inner ((&whole args
 							  label
-					   &key   force-single-check
-					          current-version) &body body)
-  @ignore label current-version
+					   &key   force-single-check)
+					  &body body)
+  @ignore label
   (if force-single-check
 	  (call-with-single-condition-inner args body)
 	  (call-with-inner args body)))
@@ -103,7 +103,7 @@ convert =when= if necessary."
   (let ((first t) conditional-body macrolet-body)
 	(setf macrolet-body
 		  (subst-if
-		   tag
+		   `(,tag)
 		   #'(lambda (elem)
 			   (when first
 				 (let ((body (match-inner label elem)))
@@ -122,7 +122,7 @@ convert =when= if necessary."
 		(if first
 			`(progn ,@body)
 			`(macrolet ((,label (&rest sexp)
-						  `(symbol-macrolet ((,',tag `(progn ,',@sexp)))
+						  `(macrolet ((,',tag () `(progn ,',@sexp)))
 							 (with-inner (,',label)
 							   ,@',macrolet-body))))
 			   ,conditional-body))))))
@@ -131,7 +131,7 @@ convert =when= if necessary."
   (let ((first t) conditional-body macrolet-body)
 	(setf macrolet-body
 		  (subst-if
-		   tag
+		   `(,tag)
 		   #'(lambda (elem)
 			   (when first
 				 (let ((body (match-inner label elem)))
@@ -143,36 +143,31 @@ convert =when= if necessary."
 
 (defun call-with-single-condition-inner (args body)
   (destructuring-bind (label &key
-							 force-single-check
-							 current-version) args
-	(setf *current-version* current-version)
+							 force-single-check) args
 	(with-gensyms (tag)
 	  (multiple-value-bind (first conditional-body macrolet-body)
 		  (convert-first-conditional body tag label)
 		(if first
 			`(progn ,@body)
 			`(macrolet ((,label (id &rest sexp)
-						  `(symbol-macrolet ((,',tag `(progn ,',@sexp)))
-							 (with-inner (,',label
-										  :force-single-check
-										  ,',force-single-check
-										  :current-version
-										  ,id)
-							   ,@',macrolet-body))))
+						  `(macrolet ((,',tag () `(progn ,',@sexp)))
+							 (symbol-macrolet ((*current-version* ,id))
+							   (with-inner (,',label
+											:force-single-check
+											,',force-single-check)
+								 ,@',macrolet-body)))))
 			   ,conditional-body))))))
 
-@eval-always
 @export
-(defparameter *current-version* nil)
+(defmacro with-versions (version bindings &body body &environment env)
+  (call-with-versions version bindings body env))
 
-@export
-(defmacro with-versions (bindings &body body)
-  ;;debug
-  (format t "~%current version is ~a" *current-version*)
-  (if *current-version*
+(defun call-with-versions (version bindings body env)
+  (if (macroexpand version env)
 	  `(symbol-macrolet ,bindings
-		 ,@body)
-	  `(,*current-version*)))
+		 ,version)
+	  `(symbol-macrolet ,bindings
+		 ,@body)))
 
 
 ;; no cool at all. should be ommited?
@@ -246,24 +241,28 @@ convert =when= if necessary."
 @export
 (defmacro define-condition-expander
 	((name expander-id expander-name
-		   &key force-single-check version-expander)
+		   &key force-single-check
+		        version-expander)
 	 macro-lambda-list &body body)
   (pushnew name *precompiling-directives*)
   (with-gensyms (versions)
 	`(progn
 	   (defmacro ,expander-name (&body body)
-		 `(with-inner (,,expander-id 
-					   :force-single-check ,,force-single-check)
-			,@body))
+		 (prog1
+			 `(symbol-macrolet ((*current-version* nil))
+				(with-inner (,,expander-id 
+							 :force-single-check ,,force-single-check)
+				  ,@body))))
 	   
 	   (defmacro ,name ,macro-lambda-list
 		 `(inner (,,expander-id)
 			,(let ((,versions nil))
 				  (flet ((,version-expander (id body)
-						   (push (list id 
-									   `(,,expander-id ,id ,body))
-								 ,versions)
+						   (pushnew (list id 
+										  `(,,expander-id ,id ,body))
+									,versions
+									:key #'car)
 						   id))
 					(let ((condition-body ,@body))
-					  `(with-versions ,,versions
+					  `(with-versions *current-version* ,,versions
 						 ,condition-body)))))))))
