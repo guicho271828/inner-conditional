@@ -223,13 +223,15 @@ OK, you may want to use a normal-looking clauses similar to =when= or
 =cond= and not to use a combination of =inner= and local macro bounded
 to =label=. In that case, use =inner-when= or =inner-if= etc.
 
-: (inner-if label condition then else)
-: (inner-when label condition &body body)
-: (inner-cond label &body clauses)
-: (inner-case label keyform &body cases)
-: (inner-ecase label keyform &body cases)
-: (inner-ccase label keyform &body cases)
-: (inner-typecase label keyform &body cases)
+#+BEGIN_SRC LISP
+(inner-if label condition then else)
+(inner-when label condition &body body)
+(inner-cond label &body clauses)
+(inner-case label keyform &body cases)
+(inner-ecase label keyform &body cases)
+(inner-ccase label keyform &body cases)
+(inner-typecase label keyform &body cases)
+#+END_SRC
 
 similar macros can be defined with =define-inner-conditional=.
 
@@ -301,9 +303,9 @@ a version using this library.
 (defvar *output-stream* nil)
 
 (define-condition-expander
-    (sample *sample-label* *output-stream-definite-here*
-            :force-single-check t
-            :version-expander version)
+    (sample
+      *sample-label*
+      *output-stream-definite-here* :force-single-check t :version-expander version)
     (&body body)
   `(if (progn
          (format t "condition checked")
