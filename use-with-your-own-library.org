@@ -79,6 +79,13 @@ like this:
              DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
 #+END_SRC
 
+*Note*: Since the above example does not require the each version of
+body to be altered, there is only one version =EITHER-IS-OK=, but in
+general you can specify any number of versions with =version= (the
+name can be configured with =:version-expander=). The implementation
+defines =version= as an =flet= local function whose scope is lexically
+valid within =define-condition-expander=.
+
 ** Optimization Results
 
 The effect of this library may seems trivial, but still I try to show
