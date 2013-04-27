@@ -15,35 +15,35 @@
 
 (defun test-speed-without-inner ()
   (with-open-file (*output-stream* "/dev/null"
-								   :direction :output
-								   :if-exists :overwrite)
-	(loop for i from 0 to +loop+
-	   do
-		 (sample
-		   (write-string "hello!" *output-stream*)))
-	(loop for i from 0 to +loop+
-	   do
-		 (sample
-		   (write-string "yep!" *output-stream*)))
-	(loop for i from 0 to +loop+
-	   do
-		 (sample
-		   (write-string "bye!" *output-stream*)))))
+                                   :direction :output
+                                   :if-exists :overwrite)
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
 
 
 (defun test-speed-without-inner-to-string ()
   (loop for i from 0 to +loop+
-	 do
-	   (sample
-		 (write-string "hello!" *output-stream*)))
+     do
+       (sample
+         (write-string "hello!" *output-stream*)))
   (loop for i from 0 to +loop+
-	 do
-	   (sample
-		 (write-string "yep!" *output-stream*)))
+     do
+       (sample
+         (write-string "yep!" *output-stream*)))
   (loop for i from 0 to +loop+
-	 do
-	   (sample
-		 (write-string "bye!" *output-stream*))))
+     do
+       (sample
+         (write-string "bye!" *output-stream*))))
 
 (princ "test without-inner")
 (time (test-speed-without-inner))

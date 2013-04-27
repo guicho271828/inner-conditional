@@ -14,9 +14,7 @@
             :force-single-check t
             :version-expander version)  
     (&body body)
-  `(if (progn
-         (format t "condition checked")
-         *output-stream*)
+  `(if *output-stream*
        ,(version 'either-is-ok `(progn ,@body))
        (with-output-to-string (*output-stream*)
          ,(version 'either-is-ok `(progn ,@body)))))

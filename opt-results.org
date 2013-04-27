@@ -7,7 +7,14 @@ I don't came up with other truly-performance-sensitive examples.
 The test data for this performance test is the macro which I have used
  in the Section /Use with your own library/ (https://github.com/guicho271828/inner-conditional/blob/master/use-with-your-own-library.org).
 
-** Without define-condition-expander
+
+** Test 1
+The test below is no good at all because the first program establishes
+an string-stream in each iteration. However, it can be interpreted
+that this library is able to minimize the effect of such trivial
+mistakes. So this is not about the algorhithm, but about the method of
+software development and writing a program.
+
 #+BEGIN_SRC lisp
 (defun test-speed-without-inner ()
   (loop for i from 0 to 5000000
@@ -32,7 +39,7 @@ The test data for this performance test is the macro which I have used
 ;   26,484,287,798 processor cycles
 ;   7,920,102,160 bytes consed
 #+END_SRC
-** With define-condition-expander
+
 #+BEGIN_SRC lisp
 (defun test-speed-with-inner ()
   (*output-stream-definite-here*
@@ -57,4 +64,114 @@ The test data for this performance test is the macro which I have used
 ;   100.06% CPU
 ;   4,799,707,782 processor cycles
 ;   783,221,312 bytes consed
+#+END_SRC
+
+** Test 2
+This test is much farer than the first one. The amount of performance
+gain is limited (less than 1 sec) but consistent. Of cource this is
+because the cost of checking is rather small.
+
+#+BEGIN_SRC lisp
+(defmacro sample (&body body)
+  `(if *output-stream*
+       (progn ,@body)
+       (with-output-to-string (*output-stream*)
+         ,@body)))
+
+(defconstant +loop+ 50000000)
+
+(defun test-speed-without-inner ()
+  (with-open-file (*output-stream* "/dev/null"
+                                   :direction :output
+                                   :if-exists :overwrite)
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
+#+END_SRC
+
+#+BEGIN_SRC lisp
+(define-condition-expander
+    (sample *sample-label* *output-stream-definite-here*
+            :force-single-check t
+            :version-expander version)  
+    (&body body)
+  `(if *output-stream*
+       ,(version 'either-is-ok `(progn ,@body))
+       (with-output-to-string (*output-stream*)
+         ,(version 'either-is-ok `(progn ,@body)))))
+
+(defconstant +loop+ 50000000)
+(defun test-speed-with-inner-to-string ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+	(loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to +loop+
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
+#+END_SRC
+
+#+BEGIN_SRC lisp
+test without-inner
+Evaluation took:
+  22.589 seconds of real time
+  22.613413 seconds of total run time (22.593412 user, 0.020001 system)
+  100.11% CPU
+  63,251,624,740 processor cycles
+  189,568 bytes consed
+  
+test with-inner
+Evaluation took:
+  22.388 seconds of real time
+  22.413401 seconds of total run time (22.385399 user, 0.028002 system)
+  100.11% CPU
+  62,690,173,402 processor cycles
+  197,424 bytes consed
+
+test without-inner
+Evaluation took:
+  22.236 seconds of real time
+  22.253391 seconds of total run time (22.229390 user, 0.024001 system)
+  100.08% CPU
+  62,263,990,823 processor cycles
+  264,896 bytes consed
+  
+test with-inner
+Evaluation took:
+  22.157 seconds of real time
+  22.181386 seconds of total run time (22.149384 user, 0.032002 system)
+  100.11% CPU
+  62,043,608,942 processor cycles
+  145,680 bytes consed
+
+test without-inner
+Evaluation took:
+  22.383 seconds of real time
+  22.405400 seconds of total run time (22.353397 user, 0.052003 system)
+  100.10% CPU
+  62,674,767,634 processor cycles
+  196,528 bytes consed
+  
+test with-inner
+Evaluation took:
+  22.115 seconds of real time
+  22.133384 seconds of total run time (22.105382 user, 0.028002 system)
+  100.08% CPU
+  61,926,060,538 processor cycles
+  166,160 bytes consed
 #+END_SRC
