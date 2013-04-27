@@ -1,0 +1,141 @@
+* Use with your own library
+
+If you write a macro which expands to a code which always checks a
+certain dynamic variable then this library may help you write an
+extension which minimizes the number of checking in the expanded code.
+
+For example:
+
+#+BEGIN_SRC LISP
+(defvar *output-stream* nil)
+(defmacro sample (&body body)
+  `(if *output-stream*
+       (progn ,@body)
+       (with-output-to-string (*output-stream*)
+         ,@body)))
+#+END_SRC
+
+In this sample, =body= is meant to output some string to a stream
+which is dynamically bound. By default, =*output-stream*= is bound to
+nil and the the result is output as a string. Similar technique is
+used in =[[https://github.com/arielnetworks/cl-markup][cl-markup]]= for example. 
+In some cases a user should run a loop over that macro.
+
+#+BEGIN_SRC LISP
+(loop for i from 0 to 5
+      do (sample (print i *output-stream*)))
+#+END_SRC
+
+The author may want to divide that conditional part of the code, but
+until now there is no standardized way to do that. Now I show you
+a version using this library.
+
+#+BEGIN_SRC LISP
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter *sample-label* 'sample-label)) ;; an identifier
+
+(defvar *output-stream* nil)
+
+(define-condition-expander
+    (sample
+      *sample-label*
+      *output-stream-definite-here* :force-single-check t :version-expander version)
+    (&body body)
+  `(if (progn
+         (format t "condition checked")
+         *output-stream*)
+       ,(version 'either-is-ok `(progn ,@body))
+       (with-output-to-string (*output-stream*)
+         ,(version 'either-is-ok `(progn ,@body)))))
+
+(defun test2 ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "hello!")))
+    (loop for i from 0 to 5
+       do
+         (sample
+           (format *output-stream* "bye!")))))
+#+END_SRC
+
+In the above example, the user doesn't have to think about the
+conditional jumping within =sample= *and at the same time* the jump is
+checked only once. The expansion result is equivalent to something
+like this:
+
+#+BEGIN_SRC LISP
+(IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
+    (PROGN
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!"))))
+    (WITH-OUTPUT-TO-STRING (*OUTPUT-STREAM*)
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "hello!")))
+       (LOOP FOR I FROM 0 TO 5
+             DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
+#+END_SRC
+
+** Optimization Results
+
+The effect of this library may seems trivial, but still I try to show
+you an optimization results. Any other result report welcome!  Because
+I don't came up with other truly-performanse-sensitive examples.
+
+The test data for this performance test is the macro which I have used
+ in the above example.
+
+*** Without define-condition-expander
+#+BEGIN_SRC lisp
+(defun test-speed-without-inner ()
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "hello!" *output-stream*)))
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "yep!" *output-stream*)))
+  (loop for i from 0 to 5000000
+	 do
+	   (sample
+		 (write-string "bye!" *output-stream*))))
+
+(time (test-speed-without-inner))
+; Evaluation took:
+;   9.458 seconds of real time
+;   9.496593 seconds of total run time (9.428589 user, 0.068004 system)
+;   [ Run times consist of 1.016 seconds GC time, and 8.481 seconds non-GC time. ]
+;   100.41% CPU
+;   26,484,287,798 processor cycles
+;   7,920,102,160 bytes consed
+#+END_SRC
+*** With define-condition-expander
+#+BEGIN_SRC lisp
+(defun test-speed-with-inner ()
+  (*output-stream-definite-here*
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "hello!" *output-stream*)))
+	(loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "yep!" *output-stream*)))
+    (loop for i from 0 to 5000000
+       do
+         (sample
+           (write-string "bye!" *output-stream*)))))
+
+(time (test-speed-with-inner))
+; Evaluation took:
+;   1.715 seconds of real time
+;   1.716107 seconds of total run time (1.492093 user, 0.224014 system)
+;   [ Run times consist of 0.056 seconds GC time, and 1.661 seconds non-GC time. ]
+;   100.06% CPU
+;   4,799,707,782 processor cycles
+;   783,221,312 bytes consed
+#+END_SRC

@@ -1,0 +1,197 @@
+* Concepts and API
+
+Removing conditional jumps in loops are one of the easiest way to
+optimize the loop. The number of checks should be minimized, and the
+checking variables in a smaller loop may well be a large
+bottleneck. Yet, some code would yield a bad-looking result of that
+optimization, since the semantics of the code best fits the code which
+has conditional jumps in a smaller loop. Luckily, Common Lisp has
+macros, which provides the ability to walk on and modify the code
+tree. So we can keep the code clean and at the same time get a
+faster result.
+
+** How it works
+
+Below is a result of macroexpand-1 of the =with-inner= code in the
+usage example. You would see how it works.
+
+#+BEGIN_SRC LISP
+(MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
+             (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1364
+                    '(WITH-INNER (BODY)
+                       (ITER
+                         (FOR I FROM 0 TO 5)
+                         (PRINT I)
+                         #:CONDITIONAL-TAG1364)))))
+  (IF FLAG
+      (BODY (PRINC "loop on"))
+      (BODY (PRINC "loop off"))))
+#+END_SRC
+
+macroexpand the =with-inner= in the macroexpantion code again, then we
+get the code below:
+
+#+BEGIN_SRC LISP
+(MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
+             (SUBST `(PROGN ,@INNER-CONDITIONAL::SEXP) '#:CONDITIONAL-TAG1365
+                    '(PROGN
+                      (ITER
+                        (FOR I FROM 0 TO 5)
+                        (PRINT I)
+                        #:CONDITIONAL-TAG1365)))))
+  (IF FLAG
+      (BODY (PRINC "loop on"))
+      (BODY (PRINC "loop off"))))
+#+END_SRC
+
+The semantics of =body= is similar to the continuation, so personally
+I call it as a compile-time continuation. It may sound odd but
+everything's in the right place isnt it? 
+
+As the name suggests, its actual implementation is different from what
+is normally called as continuation since =body= is not a function at
+all. It is because this library is meant for speed, not for the
+cleanness in the theory. Macroexpansion has no drawbacks in run-time
+so it is better than defining the body with =lambda= or =flet=.
+
+** Macro (with-inner (label) &body body)
+
+Simply, the macro =with-inner= creates many versions of (looping)
+programs, move the conditional jumps to the first entry and run the
+chosen version of those codes. Inside each program the jump code is
+deleted. =with-inner= is the very place where the conditional clauses
+written in =inner= (described below) is actually expanded.
+
+** Local Macro-like clause, or sometimes a Macro, (inner (label) conditional-clause)
+
+Inside the body of =with-inner=, you can specify a certain code to be
+out of the loop with =inner=. If =inner= is placed not within the body
+of =with-inner=, it just expands =`(,label ,@body)= to =`(progn
+,@body)=. Note that =conditional-clause= should be only one
+S-exp. There is no limitation in the expression of
+=conditional-clause= but =when= needs a special care. For example,
+
+#+BEGIN_SRC LISP
+(inner (body)
+  (when <condition>
+    (body (dosomething))))
+#+END_SRC
+
+will be expanded like this:
+
+#+BEGIN_SRC LISP
+(inner (body)
+  (if <condition>
+      (body (dosomething))
+      (body nil)))
+#+END_SRC
+
+This is because the actual body of the loop is expanded by the *local
+macro* bounded to =label= (in the abouve example it is
+=body=). Without the code modification shown above, if =<condition>=
+fails the loop code will not be run at all.
+
+** Using the different layers of =with-inner=
+
+The local macro is bounded to =label=, so you are able to use the
+different layers at the same time by specifying multiple =with-inner= s
+with different =label= s. 
+
+#+BEGIN_SRC LISP
+(defun test0 (flag)
+  (with-inner (body)
+    (loop for i from 0 to 5
+       do (with-inner (body2)
+            (loop for j from 0 to 5
+                 do
+                 (format t "~%i: ~a j: ~a" i j)
+                 (inner (body2)
+                   (if (evenp i)
+                       (body2 (format t "  i is even"))
+                       (body2 (format t "  i is odd"))))
+                 (inner (body)
+                   (if flag
+                       (body (format t "  loop on"))
+                       (body (format t "  loop off")))))))))
+#+END_SRC
+
+However unfortunately,
+=with-inner= won't work with my favorite =iterate= library, since
+=iter= macro signals an error when it finds =macrolet= in the body of
+the code.
+
+** Using other kinds of clauses
+
+Once you have understood how it works, you don't have to be afraid to
+use other conditional clauses like =cond=, =case=, etc. All you have to do
+is calling =label= .
+
+#+BEGIN_SRC LISP
+(defun test2 (arg)
+  (let ((count 0))
+    (with-inner (body)
+      (iter
+        (for i from 0 to 5)
+        (inner (body)
+          (case (progn (incf count)
+                       (mod arg 3))
+            (0 (body (format t "divided. i*3 =~a~%"
+                             (* i 3))))
+            (1 (body (format t "modulo 1. i*3 + 1 =~a~%"
+                             (+ 1 (* i 3)))))
+            (2 (body (format t "modulo 2. i*3 + 2 =~a~%"
+                             (+ 2 (* i 3)))))))))
+    (is count 1 "the condition is checked only once")))
+
+(test2 0)
+(test2 1)
+(test2 2)
+#+END_SRC
+
+** And some predefined clauses
+
+OK, you may want to use a normal-looking clauses similar to =when= or
+=cond= and not to use a combination of =inner= and local macro bounded
+to =label=. In that case, use =inner-when= or =inner-if= etc.
+
+#+BEGIN_SRC LISP
+(inner-if label condition then else)
+(inner-when label condition &body body)
+(inner-cond label &body clauses)
+(inner-case label keyform &body cases)
+(inner-ecase label keyform &body cases)
+(inner-ccase label keyform &body cases)
+(inner-typecase label keyform &body cases)
+#+END_SRC
+
+similar macros can be defined with =define-inner-conditional=.
+
+Usage Example:
+
+#+BEGIN_SRC LISP
+(define-inner-conditional inner-when label (condition &body body)
+  `(when ,condition
+	 (,label ,@body)))
+#+END_SRC
+
+Then the macroexpantion of
+
+#+BEGIN_SRC LISP
+(inner-when label <condition>
+  (dosomething)
+  (dosomething))
+#+END_SRC
+
+is
+
+#+BEGIN_SRC LISP
+(INNER (LABEL)
+  (WHEN <CONDITION>
+    (LABEL (DOSOMETHING)
+           (DOSOMETHING))))
+#+END_SRC
+
+Just simple. Simple!
+If you have any question with how it works, try some macroexpand-1,
+or C-c C-m (slime-expand-1).
+
