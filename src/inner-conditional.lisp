@@ -173,9 +173,11 @@ convert =when= if necessary."
 ;; no cool at all. should be ommited?
 ;; or should be still here for extension?
 
+@eval-always
 @export
 (defmacro define-inner-conditional
 	(name label macro-lambda-list &body body)
+  @eval-always
   (pushnew name *precompiling-directives*)
   `(defmacro ,name (,label ,@macro-lambda-list)
 	 `(inner (,label)
