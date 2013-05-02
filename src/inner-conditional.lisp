@@ -174,27 +174,24 @@ convert =when= if necessary."
 ;; or should be still here for extension?
 
 @eval-always
-@export
 (defmacro define-inner-conditional
 	(name label macro-lambda-list &body body)
-  @eval-always
-  (pushnew name *precompiling-directives*)
-  `(defmacro ,name (,label ,@macro-lambda-list)
-	 `(inner (,label)
-		,,@body)))
+  `(progn 
+	 @eval-always
+	 (pushnew ',name *precompiling-directives*)
+	 @eval-always
+	 (defmacro ,name (,label ,@macro-lambda-list)
+	   `(inner (,label)
+		  ,,@body))))
 
-@export
 (define-inner-conditional inner-when label (condition &body body)
   `(when ,condition
 	 (,label ,@body)))
-
-@export
 (define-inner-conditional inner-if label (condition then else)
   `(if ,condition
 	   (,label ,then)
 	   (,label ,else)))
 
-@export
 (define-inner-conditional inner-cond label (&body clauses)
   `(cond
 	 ,@(mapcar (lambda (clause)
@@ -203,8 +200,6 @@ convert =when= if necessary."
 					`(,condition (,label ,@body)))))
 			   clauses)))
 
-
-@export
 (define-inner-conditional inner-case label (keyform &body cases)
   `(case ,keyform
 	 ,@(mapcar (lambda (case)
@@ -213,7 +208,6 @@ convert =when= if necessary."
 					`(,key (,label ,@body)))))
 			   cases)))
 
-@export
 (define-inner-conditional inner-ecase label (keyform &body cases)
   `(ecase ,keyform
 	 ,@(mapcar (lambda (case)
@@ -221,7 +215,6 @@ convert =when= if necessary."
 				   ((cons key body)
 					`(,key (,label ,@body)))))
 			   cases)))
-@export
 (define-inner-conditional inner-ccase label (keyform &body cases)
   `(ccase ,keyform
 	 ,@(mapcar (lambda (case)
@@ -229,7 +222,6 @@ convert =when= if necessary."
 				   ((cons key body)
 					`(,key (,label ,@body)))))
 			   cases)))
-@export
 (define-inner-conditional inner-typecase label (keyform &body cases)
   `(typecase ,keyform
 	 ,@(mapcar (lambda (case)
@@ -238,17 +230,20 @@ convert =when= if necessary."
 					`(,key (,label ,@body)))))
 			   cases)))
 
+@eval-always
+(export '(define-inner-conditional
+		  inner-when inner-cond inner-if
+		  inner-case inner-typecase inner-ccase inner-ecase ))
 
-
-@export
+@eval-always
 (defmacro define-condition-expander
 	((name expander-id expander-name
 		   &key force-single-check
 		        version-expander)
 	 macro-lambda-list &body body)
-  (pushnew name *precompiling-directives*)
   (with-gensyms (versions)
 	`(progn
+	   (pushnew ',name *precompiling-directives*)
 	   (defmacro ,expander-name (&body body)
 		 (prog1
 			 `(symbol-macrolet ((*current-version* nil))
