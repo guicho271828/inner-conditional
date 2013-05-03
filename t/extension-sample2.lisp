@@ -1,7 +1,7 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional.sample2
-  (:use :cl :inner-conditional))
+  (:use :cl :inner-conditional :iterate))
 (in-package :inner-conditional.sample2)
 
 (defvar *output-stream* nil)
