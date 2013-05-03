@@ -17,18 +17,17 @@
 
 (defun test0 (flag)
   (with-inner (body)
-    (loop for i from 0 to 5
-       do (with-inner (body2)
-            (loop for j from 0 to 5
-                 do
-                 (format t "~%i: ~a j: ~a" i j)
-                 (inner (body2)
-                   (if (evenp i)
-                       (body2 (format t "  i is even"))
-                       (body2 (format t "  i is odd"))))
-                 (inner-if body flag
-						   (format t "  loop on")
-						   (format t "  loop off")))))))
+    (iter (for i from 0 to 5)
+		  (with-inner (body2)
+            (iter (for j from 0 to 5)
+				  (format t "~%i: ~a j: ~a" i j)
+				  (inner (body2)
+					(if (evenp i)
+						(body2 (format t "  i is even"))
+						(body2 (format t "  i is odd"))))
+				  (inner-if body flag
+							(format t "  loop on")
+							(format t "  loop off")))))))
 
 (test0 t)
 (test0 nil)
@@ -66,6 +65,8 @@
           (case (progn (incf count)
                        (mod arg 3))
             (0 (body (format t "divided. i*3 =~a~%"
+                             (* i 3))
+					 (format t "divided. i*3 =~a~%"
                              (* i 3))))
             (1 (body (format t "modulo 1. i*3 + 1 =~a~%"
                              (+ 1 (* i 3)))))

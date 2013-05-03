@@ -26,13 +26,13 @@
 (defvar *precompiling-directives* nil)
 
 (defun walk-tree (fn tree)
-  (mapcar (lambda (branch)
-			(funcall fn branch
-					 (lambda (branch)
-					   (walk-tree fn branch))))
-		  tree))
+  (funcall fn tree
+		   (lambda (branch)
+			 (mapcar (lambda (branch)
+					   (walk-tree fn branch))
+					 branch))))
 
-(defun precompile-directives (form)
+(defun precompile-directives (form &optional env)
   (walk-tree
    (lambda (subform cont)
 	 (iter (with expanded = subform)
@@ -40,14 +40,14 @@
 						   (cons (car expanded))
 						   (symbol expanded))
 						 *precompiling-directives*)
-			 (setf expanded (macroexpand-1 subform))
+			 (setf expanded (macroexpand-1 expanded env))
 			 (next-iteration))
 		   (return (if (consp expanded)
 					   (funcall cont expanded)
 					   expanded))))
    form))
 
-(defun precompile-directives-1 (form)
+(defun precompile-directives-1 (form &optional env)
   (walk-tree
    (let ((first t))
 	 (lambda (subform cont)
@@ -58,13 +58,25 @@
 								 (symbol expanded))
 							   *precompiling-directives*)
 				   (setf first nil
-						 expanded (macroexpand-1 subform))
+						 expanded (macroexpand-1 expanded env))
 				   (next-iteration))
 				 (return (if (consp expanded)
 							 (funcall cont expanded)
 							 expanded)))
 		   subform)))
    form))
+
+(defun precompile-1-layer (sym fn form)
+  (walk-tree
+   (lambda (subform cont)
+	 (if (and (consp subform)
+			  (equalp sym (car subform)))
+		 (apply fn (cdr subform))
+		 (if (consp subform)
+			 (funcall cont subform)
+			 subform)))
+   form))
+
 
 @export
 @doc "Defined in order to provide the editor support.
@@ -113,6 +125,8 @@ convert =when= if necessary."
 		   (precompile-directives body)))
 	(values first conditional-body macrolet-body)))
 
+;; (defun call-with-macrolet 
+
 (defun call-with-inner (args body)
   (destructuring-bind (label &rest rest) args
 	@ignore rest
@@ -121,11 +135,17 @@ convert =when= if necessary."
 		  (convert-first-inner-to-tag body tag label)
 		(if first
 			`(progn ,@body)
-			`(macrolet ((,label (&rest sexp)
-						  `(macrolet ((,',tag () `(progn ,',@sexp)))
-							 (with-inner (,',label)
-							   ,@',macrolet-body))))
-			   ,conditional-body))))))
+			(precompile-1-layer
+			 label
+			 (lambda (&rest sexp)
+			   (print sexp)
+			   (precompile-1-layer
+				tag (lambda (&rest args)
+					  @ignore args
+					  `(progn ,@sexp))
+				`(with-inner (,label)
+				   ,@macrolet-body)))
+			 conditional-body))))))
 
 (defun convert-first-conditional (body tag label)
   (let ((first t) conditional-body macrolet-body)
