@@ -6,6 +6,11 @@
 + Extensible syntaxes and helper macros for other implementers of libraries, especially for 
    the macro writers or the heavy lambda-lovers. Provides a standardized way to minimize the number of condition check
 
+* Recent changes
+
++ It does not use =macrolet= and =symbol-macrolet= anymore, which means
+  it can be used with =iterate= library. (2013/5/3)
+
 * Basic Usage
 
 The condition checking is done only once.

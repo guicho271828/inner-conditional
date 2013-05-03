@@ -13,7 +13,8 @@ faster result.
 ** How it works
 
 Below is a result of macroexpand-1 of the =with-inner= code in the
-usage example. You would see how it works.
+usage example. You would see how it works. *Note* the actual code is
+not using macrolet any more. The concept is the same though.
 
 #+BEGIN_SRC LISP
 (MACROLET ((BODY (&REST INNER-CONDITIONAL::SEXP)
@@ -115,10 +116,10 @@ with different =label= s.
                        (body (format t "  loop off")))))))))
 #+END_SRC
 
-However unfortunately,
-=with-inner= won't work with my favorite =iterate= library, since
-=iter= macro signals an error when it finds =macrolet= in the body of
-the code.
+Note: +However unfortunately, =with-inner= won't work with my favorite+
++=iterate= library, since =iter= macro signals an error when it finds+
++=macrolet= in the body of the code.+ =with-inner= works with
+=iterate= now, no problem.
 
 ** Using other kinds of clauses
 

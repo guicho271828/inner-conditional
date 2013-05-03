@@ -15,31 +15,38 @@ For example:
          ,@body)))
 #+END_SRC
 
-In this sample, =body= is meant to output some string to a stream
+In this case, =body= is meant to output some string to a stream
 which is dynamically bound. By default, =*output-stream*= is bound to
-nil and the the result is output as a string. Similar technique is
-used in =[[https://github.com/arielnetworks/cl-markup][cl-markup]]= for example. 
-In some cases a user should run a loop over that macro.
+nil and the the result is output as a string. As a result, if an
+expression =sample= appears in another =sample= macro,
+=*output-stream*= is bound to the same stream and the result would be
+put in there. This technique is used in =[[https://github.com/arielnetworks/cl-markup][cl-markup]]= for example. 
+
+However if this macro is placed in deeply nested loops it might cause
+some amount of performance drawback(not many, though).
 
 #+BEGIN_SRC LISP
-(loop for i from 0 to 5
-      do (sample (print i *output-stream*)))
+(sample
+  (print "hi!" *output-stream*)
+  (loop for i from 0 to 50000
+      do (sample (print i *output-stream*))))
 #+END_SRC
 
-The author may want to divide that conditional part of the code, but
-until now there is no standardized way to do that. Now I show you
-a version using this library.
+It checks =*output-stream*= 500001 times.
+
+So, the author may want to divide that conditional part of the code,
+so that =*output-stream*= is checked only one time... but
+until now there is no standardized way to do that.
+
+Now I show you a version using this library.
 
 #+BEGIN_SRC LISP
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *sample-label* 'sample-label)) ;; an identifier
-
 (defvar *output-stream* nil)
 
 (define-condition-expander
     (sample
-      *sample-label*
-      *output-stream-definite-here* :force-single-check t :version-expander version)
+     *output-stream-definite-here*
+     :version-expander version)
     (&body body)
   `(if (progn
          (format t "condition checked")
@@ -63,7 +70,8 @@ a version using this library.
 In the above example, the user doesn't have to think about the
 conditional jumping within =sample= *and at the same time* the jump is
 checked only once. The expansion result is equivalent to something
-like this:
+like this (as of 2013/5/3, expansion result is exactly the same as
+this):
 
 #+BEGIN_SRC LISP
 (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
