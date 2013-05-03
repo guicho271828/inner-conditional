@@ -23,8 +23,11 @@
 			   :cl-syntax-annot
 			   :optima)
   :components ((:module "src"
-                :components
-                ((:file "inner-conditional"))))
+                :serial t
+				:components
+                ((:file "inner-conditional")
+				 (:file "clauses")
+				 (:file "define-condition-expander"))))
   :description "Series of macros which optimizes out the inner conditional jumping"
   :long-description
   #.(with-open-file (stream (merge-pathnames

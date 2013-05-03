@@ -13,13 +13,10 @@
 
 @export
 (defmacro with-inner ((&whole args
-							  label
-					   &key   force-single-check)
+							  label)
 					  &body body)
   @ignore label
-  (if force-single-check
-	  (call-with-single-condition-inner args body)
-	  (call-with-inner args body)))
+  (call-with-inner args body))
 
 @eval-always
 @export
@@ -138,7 +135,6 @@ convert =when= if necessary."
 			(precompile-1-layer
 			 label
 			 (lambda (&rest sexp)
-			   (print sexp)
 			   (precompile-1-layer
 				tag (lambda (&rest args)
 					  @ignore args
@@ -147,53 +143,8 @@ convert =when= if necessary."
 				   ,@macrolet-body)))
 			 conditional-body))))))
 
-(defun convert-first-conditional (body tag label)
-  (let ((first t) conditional-body macrolet-body)
-	(setf macrolet-body
-		  (subst-if
-		   `(,tag)
-		   #'(lambda (elem)
-			   (when first
-				 (let ((body (match-inner label elem)))
-				   (when body
-					 (setf first nil conditional-body body)
-					 t))))
-		   (precompile-directives-1 body)))
-	(values first conditional-body macrolet-body)))
-
-(defun call-with-single-condition-inner (args body)
-  (destructuring-bind (label &key
-							 force-single-check) args
-	(with-gensyms (tag)
-	  (multiple-value-bind (first conditional-body macrolet-body)
-		  (convert-first-conditional body tag label)
-		(if first
-			`(progn ,@body)
-			`(macrolet ((,label (id &rest sexp)
-						  `(macrolet ((,',tag () `(progn ,',@sexp)))
-							 (symbol-macrolet ((*current-version* ,id))
-							   (with-inner (,',label
-											:force-single-check
-											,',force-single-check)
-								 ,@',macrolet-body)))))
-			   ,conditional-body))))))
-
-@export
-(defmacro with-versions (version bindings &body body &environment env)
-  (call-with-versions version bindings body env))
-
-(defun call-with-versions (version bindings body env)
-  (if (macroexpand version env)
-	  `(symbol-macrolet ,bindings
-		 ,version)
-	  `(symbol-macrolet ,bindings
-		 ,@body)))
-
-
-;; no cool at all. should be ommited?
-;; or should be still here for extension?
-
 @eval-always
+@export
 (defmacro define-inner-conditional
 	(name label macro-lambda-list &body body)
   `(progn 
@@ -204,82 +155,6 @@ convert =when= if necessary."
 	   `(inner (,label)
 		  ,,@body))))
 
-(define-inner-conditional inner-when label (condition &body body)
-  `(when ,condition
-	 (,label ,@body)))
-(define-inner-conditional inner-if label (condition then else)
-  `(if ,condition
-	   (,label ,then)
-	   (,label ,else)))
 
-(define-inner-conditional inner-cond label (&body clauses)
-  `(cond
-	 ,@(mapcar (lambda (clause)
-				 (match clause
-				   ((cons condition body)
-					`(,condition (,label ,@body)))))
-			   clauses)))
 
-(define-inner-conditional inner-case label (keyform &body cases)
-  `(case ,keyform
-	 ,@(mapcar (lambda (case)
-				 (match case
-				   ((cons key body)
-					`(,key (,label ,@body)))))
-			   cases)))
 
-(define-inner-conditional inner-ecase label (keyform &body cases)
-  `(ecase ,keyform
-	 ,@(mapcar (lambda (case)
-				 (match case
-				   ((cons key body)
-					`(,key (,label ,@body)))))
-			   cases)))
-(define-inner-conditional inner-ccase label (keyform &body cases)
-  `(ccase ,keyform
-	 ,@(mapcar (lambda (case)
-				 (match case
-				   ((cons key body)
-					`(,key (,label ,@body)))))
-			   cases)))
-(define-inner-conditional inner-typecase label (keyform &body cases)
-  `(typecase ,keyform
-	 ,@(mapcar (lambda (case)
-				 (match case
-				   ((cons key body)
-					`(,key (,label ,@body)))))
-			   cases)))
-
-@eval-always
-(export '(define-inner-conditional
-		  inner-when inner-cond inner-if
-		  inner-case inner-typecase inner-ccase inner-ecase ))
-
-@eval-always
-(defmacro define-condition-expander
-	((name expander-id expander-name
-		   &key force-single-check
-		        version-expander)
-	 macro-lambda-list &body body)
-  (with-gensyms (versions)
-	`(progn
-	   (pushnew ',name *precompiling-directives*)
-	   (defmacro ,expander-name (&body body)
-		 (prog1
-			 `(symbol-macrolet ((*current-version* nil))
-				(with-inner (,,expander-id 
-							 :force-single-check ,,force-single-check)
-				  ,@body))))
-	   
-	   (defmacro ,name ,macro-lambda-list
-		 `(inner (,,expander-id)
-			,(let ((,versions nil))
-				  (flet ((,version-expander (id body)
-						   (pushnew (list id 
-										  `(,,expander-id ,id ,body))
-									,versions
-									:key #'car)
-						   id))
-					(let ((condition-body ,@body))
-					  `(with-versions *current-version* ,,versions
-						 ,condition-body)))))))))
