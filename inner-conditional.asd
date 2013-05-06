@@ -1,12 +1,12 @@
 #|
-  This file is a part of inner-conditional project.
-  Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
+This file is a part of inner-conditional project.
+Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 |#
 
 #|
-  Series of macros which optimizes out the inner conditional jumping
+Series of macros which optimizes out the inner conditional jumping
 
-  Author: Masataro Asai (guicho2.71828@gmail.com)
+Author: Masataro Asai (guicho2.71828@gmail.com)
 |#
 
 (in-package :cl-user)
@@ -19,15 +19,17 @@
   :author "Masataro Asai"
   :license "LLGPL"
   :depends-on (:iterate
-               :alexandria
-			   :cl-syntax-annot
-			   :optima)
+		:alexandria
+		:cl-syntax-annot
+		:optima)
   :components ((:module "src"
-                :serial t
-				:components
-                ((:file "inner-conditional")
-				 (:file "clauses")
-				 (:file "define-condition-expander"))))
+			:serial t
+			:components
+			((:file :package)
+			 (:file :helper)
+			 (:file "inner-conditional")
+			 (:file "clauses")
+			 (:file "define-condition-expander"))))
   :description "Series of macros which optimizes out the inner conditional jumping"
   :long-description
   #.(with-open-file (stream (merge-pathnames

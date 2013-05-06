@@ -9,7 +9,6 @@
 		       (walk-tree fn branch))
 		     branch))))
 
-
 @eval-always
 @export
 (defvar *precompiling-directives* nil)
