@@ -20,30 +20,30 @@
     (loop for i from 0 to +loop+
        do
          (sample
-           (write-string "hello!" *output-stream*)))
+	  (write-string "hello!" *output-stream*)))
     (loop for i from 0 to +loop+
        do
          (sample
-           (write-string "yep!" *output-stream*)))
+	  (write-string "yep!" *output-stream*)))
     (loop for i from 0 to +loop+
        do
          (sample
-           (write-string "bye!" *output-stream*)))))
+	  (write-string "bye!" *output-stream*)))))
 
 
 (defun test-speed-without-inner-to-string ()
   (loop for i from 0 to +loop+
      do
        (sample
-         (write-string "hello!" *output-stream*)))
+	(write-string "hello!" *output-stream*)))
   (loop for i from 0 to +loop+
      do
        (sample
-         (write-string "yep!" *output-stream*)))
+	(write-string "yep!" *output-stream*)))
   (loop for i from 0 to +loop+
      do
        (sample
-         (write-string "bye!" *output-stream*))))
+	(write-string "bye!" *output-stream*))))
 
 (princ "test without-inner")
 (time (test-speed-without-inner))

@@ -1,13 +1,13 @@
 #|
-  This file is a part of inner-conditional project.
-  Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
+This file is a part of inner-conditional project.
+Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 |#
 
 (in-package :cl-user)
 (defpackage inner-conditional-test
   (:use :cl
         :inner-conditional
-		:iterate
+	:iterate
         :cl-test-more))
 (in-package :inner-conditional-test)
 
@@ -15,19 +15,27 @@
 
 ;; blah blah blah.
 
+(with-inner (body)
+    (iter (for i from 0 to 5)
+          (print i)
+          (inner (body)
+            (if flag
+                (body (princ "loop on"))
+                (body (princ "loop off"))))))
+
 (defun test0 (flag)
   (with-inner (body)
     (iter (for i from 0 to 5)
-		  (with-inner (body2)
+	  (with-inner (body2)
             (iter (for j from 0 to 5)
-				  (format t "~%i: ~a j: ~a" i j)
-				  (inner (body2)
-					(if (evenp i)
-						(body2 (format t "  i is even"))
-						(body2 (format t "  i is odd"))))
-				  (inner-if body flag
-							(format t "  loop on")
-							(format t "  loop off")))))))
+		  (format t "~%i: ~a j: ~a" i j)
+		  (inner (body2)
+		    (if (evenp i)
+			(body2 (format t "  i is even"))
+			(body2 (format t "  i is odd"))))
+		  (inner-if body flag
+			    (format t "  loop on")
+			    (format t "  loop off")))))))
 
 (test0 t)
 (test0 nil)
@@ -44,10 +52,10 @@
                       flag1)
                 (body (diag "loop"))))
             (inner-if body (progn
-							 (incf count2)
-							 flag2)
-					  (diag "loop2 on")
-					  (diag "loop2 off"))))
+			     (incf count2)
+			     flag2)
+		      (diag "loop2 on")
+		      (diag "loop2 off"))))
     (is count1 1 "the condition is checked only once")
     (is count2 1 "the condition is checked only once")))
 
@@ -66,7 +74,7 @@
                        (mod arg 3))
             (0 (body (format t "divided. i*3 =~a~%"
                              (* i 3))
-					 (format t "divided. i*3 =~a~%"
+		     (format t "divided. i*3 =~a~%"
                              (* i 3))))
             (1 (body (format t "modulo 1. i*3 + 1 =~a~%"
                              (+ 1 (* i 3)))))

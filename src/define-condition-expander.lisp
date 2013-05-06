@@ -58,14 +58,13 @@
 @eval-always
 @export
 (defmacro define-condition-expander
-    ((name expander-name
-	   &key (version-expander (gensym)))
+    ((inner-name outer-name version-expander)
      lambda-list &body body)
   (with-gensyms (versions expander-id)
     `(progn
-       (defmacro ,expander-name (&body body)
+       (defmacro ,outer-name (&body body)
 	 (expand-single-condition-inner
-	  ',expander-id nil body ',name
+	  ',expander-id nil body ',inner-name
 	  (lambda ,(subst '&rest '&body lambda-list)
 	    (let ((,versions nil))
 	      (flet ((,version-expander (id body)
@@ -76,7 +75,7 @@
 		   condition-body
 		   ,versions)))))))
 
-       (defmacro ,name ,lambda-list
+       (defmacro ,inner-name ,lambda-list
 	 (let ((,versions nil))
 	   (flet ((,version-expander (id body)
 		    (setf (getf ,versions id) body)
