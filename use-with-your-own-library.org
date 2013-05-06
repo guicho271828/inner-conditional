@@ -46,7 +46,7 @@ Now I show you a version using this library.
 (define-condition-expander
     (sample
      *output-stream-definite-here*
-     :version-expander version)
+     version)
     (&body body)
   `(if (progn
          (format t "condition checked")
