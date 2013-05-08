@@ -16,7 +16,8 @@
     @ignore rest
     (with-gensyms (tag)
       (multiple-value-bind (first conditional-body macrolet-body)
-	  (convert-first-inner-to-tag body tag label)
+	  (convert-first-inner-to-tag
+	   (precompile-directives body) tag label)
 	(if first
 	    `(progn ,@body)
 	    (precompile-1-layer
