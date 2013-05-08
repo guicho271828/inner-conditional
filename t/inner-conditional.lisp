@@ -15,29 +15,35 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 
 ;; blah blah blah.
 
-(with-inner (body)
-  (dotimes (i 5 5)
-    (inner (body)
-      (if flag
-	  (body (princ "loop on"))
-	  (body (princ "loop off"))))))
-
-(defun test0 (flag)
+;; checking the double inners
+(defun test0-0 (flag)
   (with-inner (body)
     (iter (for i from 0 to 5)
-	  (with-inner (body2)
-            (iter (for j from 0 to 5)
-		  (format t "~%i: ~a j: ~a" i j)
-		  (inner (body2)
-		    (if (evenp i)
-			(body2 (format t "  i is even"))
-			(body2 (format t "  i is odd"))))
-		  (inner-if body flag
-			    (format t "  loop on")
-			    (format t "  loop off")))))))
+	  (collecting
+	   (with-inner (body2)
+	     (iter (for j from 0 to 5)
+		   (inner (body2)
+		     (if (evenp i)
+			 (body2 (collecting (* i j)))
+			 (body2 (collecting (+ i j)))))
+		   (inner-if body flag
+			     (collecting (expt i j))
+			     (collecting (expt j i)))))))))
 
-(test0 t)
-(test0 nil)
+(defun test0-1 (flag)
+  (iter (for i from 0 to 5)
+	(collecting
+	 (iter (for j from 0 to 5)
+	       (if (evenp i)
+		   (collecting (* i j))
+		   (collecting (+ i j)))
+	       (if flag
+		   (collecting (expt i j))
+		   (collecting (expt j i)))))))
+
+(ok (equalp (test0-0 t) (test0-1 t)))
+(ok (equalp (test0-0 nil) (test0-1 nil)))
+
 
 (defun test1 (flag1 flag2)
   (let ((count1 0)
@@ -46,10 +52,11 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
       (iter (for i from 0 to 5)
             (print i)
             (inner (body)
-              (when (progn
-                      (incf count1)
-                      flag1)
-                (body (diag "loop"))))
+              (if (progn
+		    (incf count1)
+		    flag1)
+		  (body (diag "loop"))
+		  (body (diag "loop-not"))))
             (inner-if body (progn
 			     (incf count2)
 			     flag2)

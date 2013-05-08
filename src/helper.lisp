@@ -9,6 +9,26 @@
 		       (walk-tree fn branch))
 		     branch))))
 
+(defun subst-1 (new old tree &key (test #'eql))
+  (let ((first t))
+    (subst
+     new old tree :test
+     (lambda (e1 e2)
+       (let ((result (and first (funcall test e1 e2))))
+	 (when result
+	   (setf first nil)
+	   result))))))
+
+(defun nsubst-1 (new old tree &key (test #'eql))
+  (let ((first t))
+    (nsubst
+     new old tree :test
+     (lambda (e1 e2)
+       (let ((result (and first (funcall test e1 e2))))
+	 (when result
+	   (setf first nil)
+	   result))))))
+
 @eval-always
 @export
 (defvar *precompiling-directives* nil)

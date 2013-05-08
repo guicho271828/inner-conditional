@@ -11,7 +11,7 @@
        (with-output-to-string (*output-stream*)
          ,@body)))
 
-(defconstant +loop+ 50000000)
+(defconstant +loop+ 5000000)
 
 (defun test-speed-without-inner ()
   (with-open-file (*output-stream* "/dev/null"

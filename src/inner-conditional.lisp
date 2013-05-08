@@ -4,134 +4,164 @@
 ;; blah blah blah.
 (cl-syntax:use-syntax :annot)
 
-(define-condition inner (simple-condition)
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;; expansion hook / continuation
+;; (defvar *previous-hooks* nil)
+;; (defun reset-hooks ()
+;;   (setq *previous-hooks* nil
+;; 	*macroexpand-hook* 'funcall))
+;; (defun push-hook (hook)
+;;   (push *macroexpand-hook* *previous-hooks*)
+;;   (setf *macroexpand-hook* hook))
+;; (defun pop-hook ()
+;;   (setf *macroexpand-hook* (pop *previous-hooks*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; inner clause
+(define-condition compile-time-condition (simple-condition)
+  ((form :initarg :form :accessor form)
+   (environment :initarg :environment :accessor environment)))
+
+(defmethod print-object ((c compile-time-condition) s)
+  (print-unreadable-object (c s)
+    (with-slots (form) c
+      (format s "~a" form))))
+
+(define-condition inner-condition (compile-time-condition)
   ((label :initarg :label :accessor label)
    (tag :initarg :tag :accessor tag)
-   (body :initarg :body :accessor body)
-   (form :initarg :form :accessor form)))
+   (versions :initarg :versions :accessor versions :initform nil)
+   (body :initarg :body :accessor body)))
 
+(defmethod print-object ((c inner-condition) s)
+  (print-unreadable-object (c s)
+    (with-slots (label tag versions) c
+      (format s "INNER ~a ~a ~a" label tag versions))))
 
 @export
-(defmacro inner (&whole form (label) &body body)
+(defmacro inner (&whole form (label &key originally) &body body)
   (restart-case
       (with-gensyms (tag)
-	(signal 'inner
+	(error 'inner-condition
 		:tag tag
 		:label label
-		:form form
+		:form (or originally form)
 		:body body))
-    (use-tag (c)
+    (use-value (value)
       :test (lambda (c) (eq label (label c)))
-      (print :invoked)
-      (tag c))))
+      value)))
 
-(defvar *previous-hooks* nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; with-inner
 
-(handler-case
-    (compile nil
-	     '(lambda ()
-	       (print a)))
-  (warning (w)
-    (print w)))
-
-
-(defun reset-hooks ()
-  (setq *previous-hooks* nil
-	*macroexpand-hook* 'funcall))
+(defun try-compilation (form)
+  (handler-bind 
+      ((warning
+	(lambda (c)
+	  (muffle-warning c))))
+    (compile (gensym) `(lambda () ,form))))
 
 @export
-(defmacro with-inner ((label) &body body &environment env)
-  (%call-with-inner label body)
-  `(progn
-     ,@body
-     (with-inner-end)))
+(defmacro with-inner ((label) &body body)
+  (call-with-inner label body))
 
-(defun push-hook (hook)
-  (push *macroexpand-hook* *previous-hooks*)
-  (setf *macroexpand-hook* hook))
-(defun pop-hook ()
-  (setf *macroexpand-hook* (pop *previous-hooks*)))
+(defun call-with-inner (label body)
+  (let (inners)
+    ;; 1st pass :: search the body for inner
+    (handler-bind
+	(;(simple-error (lambda (c) (invoke-debugger c)))
+	 (inner-condition
+	  (lambda (c)
+	    ;; (format t "handling ~a target: ~a condition: ~a~%"
+	    ;; 	    (if (eq label (label c))
+	    ;; 		:success :fail) label c)
+	    (if (eq label (label c))
+		(progn
+		  (push c inners)
+		  (setf body
+			(subst-1 (tag c) (form c) body :test #'equalp))
+		  (use-value '(progn) c))
+		(setf body
+		      (subst-1 '(progn) (form c) body :test #'equalp))))))
+      (try-compilation `(progn ,@body)))
+    (setf inners (nreverse inners))
+    ;; (format t "Pass 1 finished: label: ~a inners: ~a~%" label inners)
+    ;; 2nd pass :: process inside inner
+    (mapc
+     (lambda (inner)
+       (handler-bind
+	   ((version-condition
+	     (lambda (c)
+	       (if (and (eq (label inner) (label c))
+			(eq (tag inner) (tag c)))
+		   (progn
+		     (push c (versions inner))
+		     (setf (body inner)
+			   (subst-1 (version-tag c) (form c)
+				    (body inner) :test #'equalp)))
+		   (setf body
+			 (subst-1 '(progn) (form c)
+				  body :test #'equalp)))
+	       (use-value '(progn) c))))
+	 (try-compilation
+	  (wrap-with-body-macrolet inner))))
+     inners)
+    ;; (format t "Pass 2 finished: label: ~a inners: ~a~%" label inners)
+    ;; final pass :: form a final expansion
+    (form-expansion inners body)))
 
-(defun %call-with-inner (label body)
-  (let ((prev *macroexpand-hook*))
-    (push prev *previous-hooks*)
-    (setf *macroexpand-hook*
-	  (%call-with-inner-hook prev label body))))
+(define-condition version-condition (compile-time-condition)
+  ((label :initarg :label :accessor label)
+   (tag :initarg :tag :accessor tag)
+   (version-tag :initarg :version-tag :accessor version-tag)
+   (body :initarg :body :accessor body)))
 
-(defun %call-with-inner-hook (prev label body)
-  (lambda (expander form env)
-    (let (inners)
-      (let ((tagged-body
-	     (handler-bind
-		 ((inner (lambda (c)
-			   (when (eq (label c) label)
-			     (invoke-restart
-			      (find-restart 'use-tag c)
-			      c)))))
-	       (funcall prev expander form env))))
-	tagged-body
-	;; (render-templates tagged-body inners)
-	))))
+(defmethod print-object ((c version-condition) s)
+  (print-unreadable-object (c s)
+    (with-slots (label tag version-tag) c
+      (format s "VERSION ~a ~a ~a" label tag version-tag))))
 
-;; (defun adjust-body (form c)
-;;   (with-gensyms (tag)
-;;     `(symbol-macrolet ((,tag ,(body c)))
-;;        ,(subst-1 tag (form c) form :test #'equalp))))
+(defun wrap-with-body-macrolet (inner)
+  `(macrolet
+       ((,(label inner) (&whole form &body body)
+	  (with-gensyms (,(tag inner))
+	    (restart-case
+		(error 'version-condition
+		       :tag ',(tag inner)
+		       :version-tag ,(tag inner)
+		       :label ',(label inner)
+		       :form form
+		       :body body)
+	      (use-value (value)
+		:test (lambda (c) 
+			(and (eq ',(label inner) (label c))
+			     (eq ,(tag inner) (version-tag c))))
+		value)))))
+     ,@(body inner)))
 
-;; (defun subst-1 (new old tree &key (test #'eql))
-;;   (let ((first t))
-;;     (subst
-;;      new old tree :test
-;;      (lambda (e1 e2)
-;;        (let ((result (and first (funcall test e1 e2))))
-;; 	 (when result
-;; 	   (setf first nil)
-;; 	   result))))))
+(defun form-expansion (inners main-body)
+  (if (not inners)
+      `(progn ,@main-body)
+      (let ((inner (car inners)))
+	`(symbol-macrolet 
+	     ,(mapcar
+	       (lambda (version)
+		 `(,(version-tag version)
+		    (symbol-macrolet
+			((,(tag inner) (progn ,@(body version))))
+		      ,(form-expansion (cdr inners) main-body))))
+	       (versions inner))
+	   ,@(body inner)))))
 
-;; (subst-1 2 1 '(8 8 6 (4 7 1 6) 1 9 3))
-
-;; (defun inner-handler (label main-body)
-;;   (lambda (c)
-;;     (when (eq (label c) label)
-;;       (with-gensyms (tag)
-;; 	(setf (tag c) tag)
-;; 	(invoke-restart 'become-a-tag c)
-;; 	(invoke-restart 'wrap-and-expand-again c)))))
-      
-    
-
-
-
-;; (defun call-with-inner (args body)
-;;   (destructuring-bind (label &rest rest) args
-;;     @ignore rest
-;;     (with-gensyms (tag)
-;;       (multiple-value-bind (first conditional-body macrolet-body)
-;; 	  (convert-first-inner-to-tag body tag label)
-;; 	(if first
-;; 	    `(progn ,@body)
-;; 	    (precompile-1-layer
-;; 	     label
-;; 	     (lambda (&rest sexp)
-;; 	       (precompile-1-layer
-;; 		tag (lambda (&rest args)
-;; 		      @ignore args
-;; 		      `(progn ,@sexp))
-;; 		`(with-inner (,label)
-;; 		   ,@macrolet-body)))
-;; 	     conditional-body))))))
-
-;; @eval-always
-;; @export
-;; (defmacro define-inner-conditional
-;;     (name label macro-lambda-list &body body)
-;;   `(progn 
-;;      @eval-always
-;;      (pushnew ',name *precompiling-directives*)
-;;      @eval-always
-;;      (defmacro ,name (,label ,@macro-lambda-list)
-;;        `(inner (,label)
-;; 	  ,,@body))))
+@eval-always
+@export
+(defmacro define-inner-conditional
+    (name label macro-lambda-list &body body)
+  (with-gensyms (form)
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (defmacro ,name (&whole ,form ,label ,@macro-lambda-list)
+	 `(inner (,label :originally ,,form)
+	    ,,@body)))))
 
 
 
