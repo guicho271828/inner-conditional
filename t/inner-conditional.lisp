@@ -15,13 +15,13 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 
 ;; blah blah blah.
 
-(with-inner (body)
-    (iter (for i from 0 to 5)
-          (print i)
-          (inner (body)
-            (if flag
-                (body (princ "loop on"))
-                (body (princ "loop off"))))))
+;; (with-inner (body)
+;;     (iter (for i from 0 to 5)
+;;           (print i)
+;;           (inner (body)
+;;             (if flag
+;;                 (body (princ "loop on"))
+;;                 (body (princ "loop off"))))))
 
 (defun test0 (flag)
   (with-inner (body)
