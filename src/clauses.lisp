@@ -11,6 +11,7 @@
 (define-inner-conditional inner-when label (condition &body body)
   `(when ,condition
      (,label ,@body)))
+
 (define-inner-conditional inner-if label (condition then else)
   `(if ,condition
        (,label ,then)
