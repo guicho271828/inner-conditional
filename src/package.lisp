@@ -6,4 +6,7 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional
-  (:use :cl :optima :iterate :annot.doc :annot.eval-when :alexandria))
+  (:use :cl :optima :iterate
+	:annot.doc :annot.eval-when
+	:alexandria
+	:macroexpand-dammit))

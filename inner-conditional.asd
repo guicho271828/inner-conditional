@@ -21,12 +21,15 @@ Author: Masataro Asai (guicho2.71828@gmail.com)
   :depends-on (:iterate
 		:alexandria
 		:cl-syntax-annot
+		:macroexpand-dammit
 		:optima)
   :components ((:module "src"
 			:serial t
 			:components
 			((:file :package)
 			 (:file :helper)
+			 (:file :conditions)
+			 (:file :hooks)
 			 (:file "inner-conditional")
 			 (:file "clauses")
 			 (:file "define-condition-expander"))))

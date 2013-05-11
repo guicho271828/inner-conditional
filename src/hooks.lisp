@@ -1,5 +1,5 @@
 
-(in-package :restartable-macroexpand)
+(in-package :inner-conditional)
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ;; expansion hook / continuation
 (defvar *previous-hooks* nil)
@@ -7,8 +7,15 @@
   (setq *previous-hooks* nil
 	*macroexpand-hook* 'funcall))
 (defun push-hook (hook)
-  (push *macroexpand-hook* *previous-hooks*)
-  (setf *macroexpand-hook* hook))
+  (let ((prev *macroexpand-hook*))
+    (push prev *previous-hooks*)
+    (setf *macroexpand-hook*
+	  (funcall hook (coerce prev 'function)))))
 (defun pop-hook ()
   (setf *macroexpand-hook* (pop *previous-hooks*)))
 
+(defmacro with-hook ((hook) &body body)
+  `(unwind-protect
+      (progn (push-hook ,hook)
+	     ,@body)
+    (pop-hook)))
