@@ -21,10 +21,13 @@ Author: Masataro Asai (guicho2.71828@gmail.com)
   :depends-on (:iterate
 		:alexandria
 		:cl-syntax-annot
-		:macroexpand-dammit
+		;; :macroexpand-dammit
 		:optima)
-  :components ((:module "src"
+  :components ((:module :lib
+			:components ((:file :macroexpand-dammit)))
+	       (:module "src"
 			:serial t
+			:depends-on (:lib)
 			:components
 			((:file :package)
 			 (:file :helper)

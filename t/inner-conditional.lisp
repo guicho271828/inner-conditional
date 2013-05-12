@@ -143,10 +143,10 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 
 (defun test3-1 (flag)
   (print
-   (symbol-macrolet ((a i))
-     (with-inner (body)
-       (loop for i from 0 to 5
-	  collecting
+   (with-inner (body)
+     (loop for i from 0 to 5
+	collecting
+	  (symbol-macrolet ((a i))
 	    (macrolet ((iif (&rest args)
 			 (print :iif-expanded)
 			 `(inner-if ,@args)))
@@ -190,18 +190,5 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
     "macrolet-test1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun test4-1 (i j)
-  (symbol-macrolet ((a i))
-    (with-inner (body)
-      (macrolet ((iif (&rest args)
-		   (print :iif-expanded)
-		   `(inner-if ,@args)))
-	(with-inner (body2)
-	  (symbol-macrolet ((b j))
-	    (macrolet ((e (op) `(,op a b)))
-	      (iif body2 (evenp i)
-		   (e *)
-		   (e +)))))))))
 
 (finalize)

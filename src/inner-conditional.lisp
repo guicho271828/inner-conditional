@@ -42,9 +42,9 @@
 	  (handler-bind
 	      ((inner-condition
 		(lambda (c)
-		  (format t "handling ~a. target: ~a condition: ~a~%"
-		  	  (if (eq label (label c))
-		  	      :success :fail) label c)
+		  ;; (format t "handling ~a. target: ~a condition: ~a~%"
+		  ;; 	  (if (eq label (label c))
+		  ;; 	      :success :fail) label c)
 		  (when (eq label (label c))
 		    ;; (print (environment c))
 		    (push c inners)
