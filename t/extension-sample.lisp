@@ -11,9 +11,10 @@
        (with-output-to-string (*output-stream*)
          ,@body)))
 
-(defconstant +loop+ 5000000)
+(defconstant +loop+ 100000000)
 
 (defun test-speed-without-inner ()
+  (declare (optimize (speed 3)))
   (with-open-file (*output-stream* "/dev/null"
                                    :direction :output
                                    :if-exists :overwrite)

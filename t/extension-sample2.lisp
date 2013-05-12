@@ -7,74 +7,53 @@
 (defvar *output-stream* nil)
 
 (define-condition-expander
-    (sample 
-     *output-stream-definite-here*
-     version)
+    (sample *output-stream-definite-here* version)
     (&body body)
   `(if *output-stream*
-       ,(version 'stream `(progn ,@body))
+       (version ,@body)
        (with-output-to-string (*output-stream*)
-	 ,(version 'no-stream `(progn ,@body)))))
+	 (version ,@body))))
 
-(defconstant +loop+ 5000000)
+(defconstant +loop+ 100000000)
 
 (defun test-speed-with-inner ()
+  (declare (optimize (speed 3)))
   (with-open-file (*output-stream* "/dev/null"
 				   :direction :output
 				   :if-exists :overwrite)
     (*output-stream-definite-here*
-     (iter (for i from 0 to +loop+)
+      (loop for i from 0 to +loop+
+	 do (sample
+	      (write-string "hello!" *output-stream*)))
+      (loop for i from 0 to +loop+
+	 do
 	   (sample
-	    (write-string "hello!" *output-stream*)))
-     (iter (for i from 0 to +loop+)
+	     (write-string "yep!" *output-stream*)))
+      (loop for i from 0 to +loop+
+	 do
 	   (sample
-	    (write-string "yep!" *output-stream*)))
-     (iter (for i from 0 to +loop+)
-	   (sample
-	    (write-string "bye!" *output-stream*))))))
+	     (write-string "bye!" *output-stream*))))))
 
 (princ "test - with-inner")
 (time (test-speed-with-inner))
 
 (defun test-speed-out-of-expander ()
+  (declare (optimize (speed 3)))
   (with-open-file (*output-stream* "/dev/null"
 				   :direction :output
 				   :if-exists :overwrite)
-    (iter (for i from 0 to +loop+)
-	  (sample
+    (loop for i from 0 to +loop+
+       do
+	 (sample
 	   (write-string "hello!" *output-stream*)))
-    (iter (for i from 0 to +loop+)
-	  (sample
+    (loop for i from 0 to +loop+
+       do
+	 (sample
 	   (write-string "yep!" *output-stream*)))
-    (iter (for i from 0 to +loop+)
-	  (sample
+    (loop for i from 0 to +loop+
+       do
+	 (sample
 	   (write-string "bye!" *output-stream*)))))
 
 (princ "test - conditionals out of expander")
 (time (test-speed-out-of-expander))
-
-(defun test0 ()
-  (let ((*output-stream* t))
-    (*output-stream-definite-here*
-     (iter (for i from 0 to 5)
-	   (sample
-	    (format *output-stream* "hello!"))))))
-
-(defun test1 ()
-  (*output-stream-definite-here*
-   (iter (for i from 0 to 5)
-	 (sample
-	  (format *output-stream* "hello!")))))
-
-(defun test2 ()
-  (*output-stream-definite-here*
-   (iter (for i from 0 to 5)
-	 (sample
-	  (format *output-stream* "hello!")))
-   (iter (for i from 0 to 5)
-	 (sample
-	  (format *output-stream* "bye!")))))
-
-(test0)
-(test1)
-(test2)

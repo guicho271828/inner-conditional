@@ -16,6 +16,12 @@
 
 (defmacro with-hook ((hook) &body body)
   `(unwind-protect
-      (progn (push-hook ,hook)
-	     ,@body)
-    (pop-hook)))
+	(progn
+	  (push-hook ,hook)
+	  ,@body)
+     (pop-hook)))
+;; (defmacro with-hook ((hook) &body body)
+;;   `(prog2
+;;        (push-hook ,hook)
+;;        (progn ,@body)
+;;      (pop-hook)))
