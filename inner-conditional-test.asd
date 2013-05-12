@@ -1,6 +1,6 @@
 #|
-  This file is a part of inner-conditional project.
-  Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
+This file is a part of inner-conditional project.
+Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 |#
 
 (in-package :cl-user)
@@ -14,8 +14,8 @@
   :depends-on (:inner-conditional
                :cl-test-more)
   :components ((:module "t"
-                :components
-                ((:file :inner-conditional)
-				 (:file :extension-sample)
-				 (:file :extension-sample2))))
+			:components
+			((:file :inner-conditional)
+			 (:file :extension-sample)
+			 (:file :extension-sample2))))
   :perform (load-op :after (op c) (asdf:clear-system c)))

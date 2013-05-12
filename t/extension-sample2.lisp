@@ -1,7 +1,7 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional.sample2
-  (:use :cl :inner-conditional :iterate))
+  (:use :cl :inner-conditional :iterate :cl-test-more))
 (in-package :inner-conditional.sample2)
 
 (defvar *output-stream* nil)
@@ -14,46 +14,34 @@
        (with-output-to-string (*output-stream*)
 	 (version ,@body))))
 
-(defconstant +loop+ 100000000)
+(defparameter +loop+ 300)
 
-(defun test-speed-with-inner ()
+(defun test0-0 ()
   (declare (optimize (speed 3)))
-  (with-open-file (*output-stream* "/dev/null"
-				   :direction :output
-				   :if-exists :overwrite)
+  (diag "test with *output-stream-definite-here*")
+  (with-output-to-string (*output-stream*)
     (*output-stream-definite-here*
-      (loop for i from 0 to +loop+
-	 do (sample
-	      (write-string "hello!" *output-stream*)))
-      (loop for i from 0 to +loop+
-	 do
-	   (sample
-	     (write-string "yep!" *output-stream*)))
-      (loop for i from 0 to +loop+
-	 do
-	   (sample
-	     (write-string "bye!" *output-stream*))))))
+      (iter
+	(for i below +loop+)
+	(iter
+	  (for j below +loop+)
+	  (iter
+	    (for k below +loop+)
+	    (sample
+	      (write-char #\. *output-stream*))))))))
 
-(princ "test - with-inner")
-(time (test-speed-with-inner))
-
-(defun test-speed-out-of-expander ()
+(defun test0-1 ()
   (declare (optimize (speed 3)))
-  (with-open-file (*output-stream* "/dev/null"
-				   :direction :output
-				   :if-exists :overwrite)
-    (loop for i from 0 to +loop+
-       do
-	 (sample
-	   (write-string "hello!" *output-stream*)))
-    (loop for i from 0 to +loop+
-       do
-	 (sample
-	   (write-string "yep!" *output-stream*)))
-    (loop for i from 0 to +loop+
-       do
-	 (sample
-	   (write-string "bye!" *output-stream*)))))
+  (diag "test without *output-stream-definite-here*")
+  (with-output-to-string (*output-stream*)
+    (iter
+      (for i below +loop+)
+      (iter
+	(for j below +loop+)
+	(iter
+	  (for k below +loop+)
+	  (sample
+	    (write-char #\. *output-stream*)))))))
 
-(princ "test - conditionals out of expander")
-(time (test-speed-out-of-expander))
+(ok (string= (time (test0-0))
+	     (time (test0-1))))
