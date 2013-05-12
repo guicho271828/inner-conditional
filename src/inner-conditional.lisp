@@ -55,7 +55,6 @@
 (defun call-with-inner-pass2 (inner expand
 			       &optional
 			       (label (label inner)))
-  ;; (print (environment inner))
   (handler-bind
       ((version-condition
 	(lambda (c)
@@ -71,7 +70,6 @@
 	    (use-value (version-tag c) c)))))
     (funcall expand)))
 
-(defvar *debug-env*)
 (defun call-with-inner (label body
 			outer-handler
 			inner-body-handler
@@ -86,7 +84,7 @@
 		     (macroexpand-dammit
 		      `(progn ,@body) env)))
       
-      (format t "Pass 1 finished: label: ~a inners: ~a~%" label inners)
+      ;; (format t "Pass 1 finished: label: ~a inners: ~a~%" label inners)
       ;; 2nd pass :: process inside inner
       (mapc
        (lambda (inner)
@@ -99,7 +97,7 @@
 		    (wrap-with-body-macrolet label inner)
 		    (environment inner))))))
        inners)
-      (format t "Pass 2 finished: label: ~a inners: ~a~%" label inners)
+      ;; (format t "Pass 2 finished: label: ~a inners: ~a~%" label inners)
       ;; final pass :: form a final expansion
       (with-gensyms (outer-tag)
 	`(symbol-macrolet ((,outer-tag ,outer-expansion))
