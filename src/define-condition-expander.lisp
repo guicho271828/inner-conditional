@@ -25,8 +25,11 @@
 @eval-always
 @export
 (defmacro define-condition-expander
-    ((inner-name outer-name &optional (version-expander inner-name))
+    ((inner-name outer-name version-expander)
      lambda-list &body body)
+  (assert (not (eq inner-name version-expander))
+	  nil "inner-name and version-expander should be ~
+               of different name")
   (with-gensyms (%condition)
     (destructuring-bind (lambda-list environment form)
 	(%macro-lambda-list-whole-body lambda-list)

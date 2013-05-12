@@ -77,58 +77,14 @@
 			inner-body-handler
 			final-expander
 			&optional env)
-  ;; (restart-case
-  ;;     (signal 'compile-time-condition :environment env)
-  ;;   (use-environment (new-env)
-  ;;     (break "use-environment ~%old: ~a~%new: ~a~%" env new-env)
-  ;;     (setf env new-env)))
   (with-hook (#'use-value-hook)
     ;; 1st pass :: search the body for inner
     (multiple-value-bind
 	  (outer-expansion inners)
 	(funcall outer-handler
 		 (lambda ()
-		   ;; (handler-bind ((compile-time-condition
-		   ;; 		   (lambda (c)
-		   ;; 		     (invoke-restart
-		   ;; 		      (find-restart 'use-environment c)
-		   ;; 		      env))))
 		     (macroexpand-dammit
-		      `(progn ,@body) env)
-		     ;;)
-		     ))
-
-      ;; (let ((sexp outer-expansion))
-      ;; 	(tagbody start
-      ;; 	   (restart-bind ((setenv (lambda ()
-      ;; 				    (setf *debug-env* env)
-      ;; 				    (go start)))
-      ;; 			  (macroexpand-dammit
-      ;; 			   (lambda ()
-      ;; 			     (setf sexp (macroexpand-dammit
-      ;; 					 sexp env))
-      ;; 			     (go start)
-      ;; 			     ))
-      ;; 			  (macroexpand-1
-      ;; 			   (lambda ()
-      ;; 			     (setf sexp (macroexpand-1
-      ;; 					 sexp env))
-      ;; 			     (go start)
-      ;; 			     ))
-      ;; 			  (macroexpand
-      ;; 			   (lambda ()
-      ;; 			     (setf sexp (macroexpand
-      ;; 					 sexp env))
-      ;; 			     (go start)
-      ;; 			     ))
-      ;; 			  (go-down (lambda (n)
-      ;; 				     (setf sexp (nth n sexp))
-      ;; 				     (go start))
-      ;; 			    :interactive-function
-      ;; 			    (lambda () (list (read)))))
-      ;; 	     (break "~a" sexp)
-      ;; 	     )))
-
+		      `(progn ,@body) env)))
       
       (format t "Pass 1 finished: label: ~a inners: ~a~%" label inners)
       ;; 2nd pass :: process inside inner
@@ -145,19 +101,9 @@
        inners)
       (format t "Pass 2 finished: label: ~a inners: ~a~%" label inners)
       ;; final pass :: form a final expansion
-      ;; ... but I can't figure out why this additional expansion is needed
       (with-gensyms (outer-tag)
 	`(symbol-macrolet ((,outer-tag ,outer-expansion))
-	   ,(funcall final-expander inners outer-tag))
-	;; (let ((result `(symbol-macrolet ((,outer-tag ,outer-expansion))
-	;; 		   ,(form-expansion inners outer-tag))))
-	;;   (format t "~%expansion result :~
-	;;              ~%~a~
-	;;              ~%~
-	;;              ~%________________________________"
-	;; 	     result)
-	;;   result)
-	))))
+	   ,(funcall final-expander inners outer-tag))))))
 
 (define-condition version-condition (compile-time-condition)
   ((label :initarg :label :accessor label)
