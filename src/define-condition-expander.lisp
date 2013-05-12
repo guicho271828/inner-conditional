@@ -41,7 +41,7 @@
 	     (signal ',%condition
 		     :tag ,inner-name
 		     :label ',inner-name
-		     :env ,environment
+		     :environment ,environment
 		     :form ,form
 		     :body `(,,@body))
 	     ,@body))

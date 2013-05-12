@@ -1,7 +1,7 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional.sample
-  (:use :cl :inner-conditional :iterate))
+  (:use :cl :inner-conditional :iterate :cl-test-more))
 (in-package :inner-conditional.sample)
 
 (defvar *output-stream* nil)
@@ -11,40 +11,19 @@
        (with-output-to-string (*output-stream*)
          ,@body)))
 
-(defconstant +loop+ 100000000)
+(defparameter +loop+ 300)
 
-(defun test-speed-without-inner ()
+(defun test0-0 ()
   (declare (optimize (speed 3)))
-  (with-open-file (*output-stream* "/dev/null"
-                                   :direction :output
-                                   :if-exists :overwrite)
-    (loop for i from 0 to +loop+
-       do
-         (sample
-	  (write-string "hello!" *output-stream*)))
-    (loop for i from 0 to +loop+
-       do
-         (sample
-	  (write-string "yep!" *output-stream*)))
-    (loop for i from 0 to +loop+
-       do
-         (sample
-	  (write-string "bye!" *output-stream*)))))
+  (diag "test without aid of define-condition-expander")
+  (with-output-to-string (*output-stream*)
+    (iter
+      (for i below +loop+)
+      (iter
+	(for j below +loop+)
+	(iter
+	  (for k below +loop+)
+	  (sample
+	    (write-char #\. *output-stream*)))))))
 
-
-(defun test-speed-without-inner-to-string ()
-  (loop for i from 0 to +loop+
-     do
-       (sample
-	(write-string "hello!" *output-stream*)))
-  (loop for i from 0 to +loop+
-     do
-       (sample
-	(write-string "yep!" *output-stream*)))
-  (loop for i from 0 to +loop+
-     do
-       (sample
-	(write-string "bye!" *output-stream*))))
-
-(princ "test without-inner")
-(time (test-speed-without-inner))
+(time (test0-0))

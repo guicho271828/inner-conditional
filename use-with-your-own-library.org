@@ -51,9 +51,9 @@ Now I show you a version using this library.
   `(if (progn
          (format t "condition checked")
          *output-stream*)
-       ,(version 'either-is-ok `(progn ,@body))
+       (version `(progn ,@body))
        (with-output-to-string (*output-stream*)
-         ,(version 'either-is-ok `(progn ,@body)))))
+         (version `(progn ,@body)))))
 
 (defun test2 ()
   (*output-stream-definite-here*
@@ -70,8 +70,7 @@ Now I show you a version using this library.
 In the above example, the user doesn't have to think about the
 conditional jumping within =sample= *and at the same time* the jump is
 checked only once. The expansion result is equivalent to something
-like this (as of 2013/5/3, expansion result is exactly the same as
-this):
+like this:
 
 #+BEGIN_SRC LISP
 (IF (PROGN (FORMAT T "condition checked") *OUTPUT-STREAM*)
@@ -86,12 +85,3 @@ this):
        (LOOP FOR I FROM 0 TO 5
              DO (PROGN (FORMAT *OUTPUT-STREAM* "bye!")))))
 #+END_SRC
-
-*Note*: Since the above example does not require the each version of
-body to be altered, there is only one version =EITHER-IS-OK=, but in
-general you can specify any number of versions with =version= (the
-name can be configured with =:version-expander=). The implementation
-defines =version= as an =flet= local function whose scope is lexically
-valid within =define-condition-expander=.
-
-
