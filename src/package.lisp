@@ -9,4 +9,4 @@
   (:use :cl :optima :iterate
 	:annot.doc :annot.eval-when
 	:alexandria
-	:macroexpand-dammit))
+	:macroexpand-dammit-guicho))

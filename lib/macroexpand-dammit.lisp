@@ -22,14 +22,14 @@
 ;; - correct the mistaken loop bindings to remove warnings for CCL. 
 ;;; reported by Daniel Gackle
 
-(cl:defpackage #:macroexpand-dammit
+(cl:defpackage #:macroexpand-dammit-guicho
   #+lispworks (:import-from #:lispworks #:compiler-let)
   #+ccl (:import-from #:ccl #:compiler-let)
   (:use #:cl)
   (:export #:macroexpand-dammit
 	   #:macroexpand-dammit-as-macro
 	   #:macroexpand-dammit-expansion))
-(cl:in-package #:macroexpand-dammit)
+(cl:in-package #:macroexpand-dammit-guicho)
 
 (eval-when (:compile-toplevel :load-toplevel :execute) 
   (defvar *form-handler* (make-hash-table))
