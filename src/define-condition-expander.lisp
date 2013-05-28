@@ -33,27 +33,28 @@
   (with-gensyms (%condition)
     (destructuring-bind (lambda-list environment form)
 	(%macro-lambda-list-whole-body lambda-list)
-      `(progn
-	 (define-condition ,%condition (inner-condition)
-	   ())
-	 (defmacro ,inner-name ,lambda-list
-	   (with-gensyms (,inner-name)
-	     (signal ',%condition
-		     :tag ,inner-name
-		     :label ',inner-name
-		     :environment ,environment
-		     :form ,form
-		     :body `(,,@body))
-	     ,@body))
-	 (defmacro ,version-expander (&body body)
-	   `(progn ,@body))
-	 (defmacro ,outer-name (&body body &environment env)
-	   (call-with-inner
-	    ',version-expander body
-	    (curry #'call-with-inner-pass1 ',inner-name)
-	    (rcurry #'call-with-inner-pass2 ',version-expander)
-	    #'form-expansion-with-single-condition
-	    env))))))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+	 (progn
+	   (define-condition ,%condition (inner-condition)
+	     ())
+	   (defmacro ,inner-name ,lambda-list
+	     (with-gensyms (,inner-name)
+	       (signal ',%condition
+		       :tag ,inner-name
+		       :label ',inner-name
+		       :environment ,environment
+		       :form ,form
+		       :body `(,,@body))
+	       ,@body))
+	   (defmacro ,version-expander (&body body)
+	     `(progn ,@body))
+	   (defmacro ,outer-name (&body body &environment env)
+	     (call-with-inner
+	      ',version-expander body
+	      (curry #'call-with-inner-pass1 ',inner-name)
+	      (rcurry #'call-with-inner-pass2 ',version-expander)
+	      #'form-expansion-with-single-condition
+	      env)))))))
 
 (defun form-expansion-with-single-condition (inners outer-tag)
   (let* ((inner (car inners)))
