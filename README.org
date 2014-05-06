@@ -10,6 +10,8 @@
 
 + It does not use =macrolet= and =symbol-macrolet= anymore, which means
   it can be used with =iterate= library. (2013/5/3)
++ This library is not well maintained now. Please (?) don't use it.
++ I think I will reerite it with [[recursive-macroexpansion][https://github.com/guicho271828/recursive-macroexpansion]].
 
 * Basic Usage
 
