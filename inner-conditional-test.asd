@@ -10,7 +10,9 @@ Copyright (c) 2013 Masataro Asai (guicho2.71828@gmail.com)
 
 (defsystem inner-conditional-test
   :author "Masataro Asai"
+  :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
+  :description "Test systems for Inner-Conditional."
   :depends-on (:inner-conditional
                :cl-test-more)
   :components ((:module "t"

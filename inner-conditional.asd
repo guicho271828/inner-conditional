@@ -17,6 +17,7 @@ Author: Masataro Asai (guicho2.71828@gmail.com)
 (defsystem inner-conditional
   :version "0.1.0"
   :author "Masataro Asai"
+  :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:iterate
 		:alexandria
