@@ -6,7 +6,7 @@
 
 (in-package :cl-user)
 (defpackage inner-conditional
-  (:use :cl :optima :iterate
+  (:use :cl :trivia :iterate
 	:annot.doc :annot.eval-when
 	:alexandria
 	:macroexpand-dammit-guicho))

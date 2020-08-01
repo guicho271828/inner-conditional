@@ -23,7 +23,7 @@ Author: Masataro Asai (guicho2.71828@gmail.com)
 		:alexandria
 		:cl-syntax-annot
 		;; :macroexpand-dammit
-		:optima)
+		:trivia)
   :components ((:module :lib
 			:components ((:file :macroexpand-dammit)))
 	       (:module "src"
